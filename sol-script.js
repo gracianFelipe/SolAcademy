@@ -1,10 +1,22 @@
 (function(){
-    console.log("🌞 Sol Academy conectada! Carregando variáveis do Moodle de forma segura...");
+    // =========================================================================
+    // 0. TRAVA DE SEGURANÇA GLOBAL DE CURSOS (Controle pelo VS Code!)
+    // =========================================================================
+    // Coloque aqui os IDs de todas as salas onde a Sol deve funcionar:
+    var CURSOS_ATIVOS = [1279, 1955]; 
+    
+    var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
+
+    if (!CURSOS_ATIVOS.includes(COURSE_ID)) {
+        // Se o curso não estiver na lista, o script morre aqui e a Sol não aparece.
+        return; 
+    }
+
+    console.log("🌞 Sol Academy autorizada e conectada para o curso: " + COURSE_ID);
     
     // =========================================================================
-    // 0. CARREGANDO O COFRE DE SEGURANÇA (Vindo do Moodle)
+    // 0.1 CARREGANDO O COFRE DE SEGURANÇA (Vindo do HTML Adicional do Moodle)
     // =========================================================================
-    // Se o window.SOL_CONFIG não existir, ele cria variáveis vazias para não quebrar o código
     var CONFIG = window.SOL_CONFIG || { TOKEN: '', CHAT_URL: '' };
 
     // =========================================================================
@@ -28,6 +40,7 @@
             </p>
         `;
     } else {
+        console.log("❌ Âncora #kai-sol-root não encontrada nesta página.");
         return;
     }
 
@@ -39,12 +52,10 @@
     // =========================================================================
     // 2. LÓGICA DA SOL ACADEMY
     // =========================================================================
-    // O Token agora vem da variável segura do Moodle
     var TOKEN = CONFIG.TOKEN;
     var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;
     var BASE  = ROOT + '/webservice/rest/server.php';
   
-    var COURSE_ID   = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId,10) : 1279;
     var WINDOW_DAYS = 7;
     var ABSENCE_SECONDS = 3 * 24 * 60 * 60; 
     var DEBUG_MODE = true;
@@ -114,23 +125,19 @@
   
     function mostrarFraseMotivacional(userId){
       var box = document.getElementById('kai-motivacional');
-      if (!box) {
-          console.log("❌ Erro: Caixa da frase não encontrada.");
-          return; 
-      }
+      if (!box) return; 
   
       var uid = userId || 'visitante';
       var key = 'kai.motivacional.last.user.'+uid+'.course.'+COURSE_ID;
       var last = parseInt(localStorage.getItem(key)||'0',10);
       var now = Date.now();
       
-      // TRAVA DE 2 HORAS (Para teste imediato, coloque // no início da linha abaixo)
-      if (now - last < 2 * 60 * 60 * 1000) return;
+      // TRAVA DE 2 HORAS (Para teste imediato, comente a linha abaixo com //)
+      // if (now - last < 2 * 60 * 60 * 1000) return;
       
       localStorage.setItem(key, String(now));
   
       var frase = frases[Math.floor(Math.random()*frases.length)];
-      console.log("💡 Frase sorteada agora:", frase); 
   
       var div = document.createElement('div');
       div.style.cssText = "margin:10px 0; padding:12px 16px; background:#fff7ed; color:#ea580c; border-left:4px solid #f97316; border-radius:0 8px 8px 0; font-size:14px; font-weight:500; opacity:1; transition:opacity 3s ease-out;";
@@ -146,7 +153,6 @@
     }
   
     function apiUrl(fn, params){
-      // Previne erro se o token não existir
       if (!TOKEN) return ''; 
       var u = BASE + '?moodlewsrestformat=json&wsfunction=' + encodeURIComponent(fn) + '&wstoken=' + encodeURIComponent(TOKEN);
       for (var k in params){ if (Object.prototype.hasOwnProperty.call(params,k)){ u += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(String(params[k])); } }
@@ -237,9 +243,8 @@
     }
   
     function loadReminders(){
-      // Se o token não estiver carregado, cancela a busca para não dar erro na tela do aluno
       if (!TOKEN) {
-          setSub('Erro de configuração: Token da Sol Academy ausente.');
+          setSub('Erro: Sem autorização para buscar tarefas.');
           return;
       }
 

@@ -1,30 +1,28 @@
 (function(){
     // =========================================================================
-    // 0. TRAVA GLOBAL E LISTA DE CURSOS (Controle absoluto pelo VS Code)
+    // 0. TRAVA GLOBAL E LISTA DE CURSOS
     // =========================================================================
     var CURSOS_ATIVOS = [1279]; 
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
 
-    // Se o curso não estiver na lista, a Sol não faz nada e fica invisível
     if (!CURSOS_ATIVOS.includes(COURSE_ID)) {
         return; 
     }
 
     console.log("🌞 Sol Academy: Modo Widget ativado para o curso " + COURSE_ID);
     
-    // =========================================================================
-    // 0.1 CARREGANDO O COFRE DE SEGURANÇA (Do HTML Adicional do Moodle)
-    // =========================================================================
     var CONFIG = window.SOL_CONFIG || { TOKEN: '', CHAT_URL: '' };
 
+    // Evita que o botão seja criado duas vezes caso o Moodle recarregue a página por trás
+    if (document.getElementById('kai-sol-fab')) {
+        return;
+    }
+
     // =========================================================================
-    // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (Sem precisar de HTML no Moodle!)
+    // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (100% Autônomo)
     // =========================================================================
-    
-    // 1.1 Injetando o CSS (Aparência do Botão e da Janela)
     var style = document.createElement('style');
     style.innerHTML = `
-        /* Botão Flutuante */
         #kai-sol-fab {
             position: fixed; bottom: 30px; right: 30px; z-index: 99999;
             background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
@@ -35,7 +33,6 @@
         }
         #kai-sol-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 6px 20px rgba(234, 88, 12, 0.6); }
         
-        /* Fundo escuro quando a janela abre */
         #kai-sol-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
@@ -43,7 +40,6 @@
             opacity: 0; transition: opacity 0.3s ease;
         }
         
-        /* A Janela Modal da Sol */
         #kai-sol-modal {
             background: #fff; width: 95%; max-width: 960px; height: 90vh; max-height: 850px;
             border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;
@@ -51,7 +47,6 @@
             font-family: system-ui,-apple-system,sans-serif;
         }
         
-        /* Cabeçalho da Janela */
         #kai-sol-header {
             background: #1e3a8a; padding: 16px 24px; color: #fff;
             display: flex; justify-content: space-between; align-items: center;
@@ -63,12 +58,11 @@
         }
         #kai-sol-close:hover { opacity: 1; }
         
-        /* Corpo rolável */
         #kai-sol-body { padding: 24px; overflow-y: auto; flex: 1; background: #f8fafc; }
     `;
     document.head.appendChild(style);
 
-    // 1.2 Criando a estrutura HTML e injetando na página automaticamente
+    // A mágica acontece aqui: Colamos direto no BODY do site, sem âncora!
     var widgetContainer = document.createElement('div');
     widgetContainer.innerHTML = `
         <div id="kai-sol-fab">
@@ -99,7 +93,7 @@
     `;
     document.body.appendChild(widgetContainer);
 
-    // 1.3 Lógica de Abrir e Fechar o Widget
+    // Lógica de Abrir/Fechar
     var fab = document.getElementById('kai-sol-fab');
     var overlay = document.getElementById('kai-sol-overlay');
     var modal = document.getElementById('kai-sol-modal');
@@ -107,12 +101,10 @@
 
     function openSol() {
         overlay.style.display = 'flex';
-        // Pequeno delay para o efeito de transição funcionar
         setTimeout(() => { 
             overlay.style.opacity = '1'; 
             modal.style.transform = 'translateY(0)'; 
         }, 10);
-        // Só carrega as frases e os lembretes quando o aluno abre o modal
         loadReminders(); 
     }
 
@@ -125,12 +117,11 @@
     fab.addEventListener('click', openSol);
     closeBtn.addEventListener('click', closeSol);
     overlay.addEventListener('click', function(e){
-        if(e.target === this) closeSol(); // Fecha se clicar fora da janela
+        if(e.target === this) closeSol(); 
     });
 
-
     // =========================================================================
-    // 2. LÓGICA DA SOL ACADEMY (Lembretes, Frases e Api)
+    // 2. LÓGICA DA SOL ACADEMY
     // =========================================================================
     var TOKEN = CONFIG.TOKEN;
     var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;

@@ -2,7 +2,7 @@
     // =========================================================================
     // 0. TRAVA GLOBAL E LISTA DE CURSOS
     // =========================================================================
-    var CURSOS_ATIVOS = [1279]; 
+    var CURSOS_ATIVOS = [1279, 1643]; 
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
 
     if (!CURSOS_ATIVOS.includes(COURSE_ID)) {

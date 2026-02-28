@@ -1,56 +1,136 @@
 (function(){
     // =========================================================================
-    // 0. TRAVA DE SEGURANÇA GLOBAL DE CURSOS (Controle pelo VS Code!)
+    // 0. TRAVA GLOBAL E LISTA DE CURSOS (Controle absoluto pelo VS Code)
     // =========================================================================
-    // Coloque aqui os IDs de todas as salas onde a Sol deve funcionar:
-    var CURSOS_ATIVOS = [1279, 1955]; 
-    
+    var CURSOS_ATIVOS = [1279]; 
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
 
+    // Se o curso não estiver na lista, a Sol não faz nada e fica invisível
     if (!CURSOS_ATIVOS.includes(COURSE_ID)) {
-        // Se o curso não estiver na lista, o script morre aqui e a Sol não aparece.
         return; 
     }
 
-    console.log("🌞 Sol Academy autorizada e conectada para o curso: " + COURSE_ID);
+    console.log("🌞 Sol Academy: Modo Widget ativado para o curso " + COURSE_ID);
     
     // =========================================================================
-    // 0.1 CARREGANDO O COFRE DE SEGURANÇA (Vindo do HTML Adicional do Moodle)
+    // 0.1 CARREGANDO O COFRE DE SEGURANÇA (Do HTML Adicional do Moodle)
     // =========================================================================
     var CONFIG = window.SOL_CONFIG || { TOKEN: '', CHAT_URL: '' };
 
     // =========================================================================
-    // 1. INJEÇÃO DO HTML
+    // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (Sem precisar de HTML no Moodle!)
     // =========================================================================
-    var root = document.getElementById('kai-sol-root');
-    if (root) {
-        root.innerHTML = `
-            <div id="kai-reminders" style="max-width: 920px; font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 20px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-                    <h3 style="margin: 0; color: #1e3a8a;">🌞 Lembretes desta semana</h3>
-                    <div id="kai-presenca" style="min-height: 36px;"></div>
+    
+    // 1.1 Injetando o CSS (Aparência do Botão e da Janela)
+    var style = document.createElement('style');
+    style.innerHTML = `
+        /* Botão Flutuante */
+        #kai-sol-fab {
+            position: fixed; bottom: 30px; right: 30px; z-index: 99999;
+            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+            color: #fff; padding: 14px 24px; border-radius: 50px;
+            font-family: system-ui,-apple-system,sans-serif; font-weight: 600; font-size: 16px;
+            box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4); cursor: pointer;
+            display: flex; align-items: center; gap: 10px; transition: all 0.3s ease;
+        }
+        #kai-sol-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 6px 20px rgba(234, 88, 12, 0.6); }
+        
+        /* Fundo escuro quando a janela abre */
+        #kai-sol-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            z-index: 999999; display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        
+        /* A Janela Modal da Sol */
+        #kai-sol-modal {
+            background: #fff; width: 95%; max-width: 960px; height: 90vh; max-height: 850px;
+            border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); transform: translateY(20px); transition: transform 0.3s ease;
+            font-family: system-ui,-apple-system,sans-serif;
+        }
+        
+        /* Cabeçalho da Janela */
+        #kai-sol-header {
+            background: #1e3a8a; padding: 16px 24px; color: #fff;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        #kai-sol-header h2 { margin: 0; color: #fff; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 10px;}
+        #kai-sol-close {
+            background: none; border: none; color: #fff; font-size: 28px;
+            cursor: pointer; opacity: 0.8; transition: opacity 0.2s; padding: 0; line-height: 1;
+        }
+        #kai-sol-close:hover { opacity: 1; }
+        
+        /* Corpo rolável */
+        #kai-sol-body { padding: 24px; overflow-y: auto; flex: 1; background: #f8fafc; }
+    `;
+    document.head.appendChild(style);
+
+    // 1.2 Criando a estrutura HTML e injetando na página automaticamente
+    var widgetContainer = document.createElement('div');
+    widgetContainer.innerHTML = `
+        <div id="kai-sol-fab">
+            <span style="font-size: 20px;">🌞</span> Fale com a Sol
+        </div>
+        
+        <div id="kai-sol-overlay">
+            <div id="kai-sol-modal">
+                <div id="kai-sol-header">
+                    <h2><span>🌞</span> Sol Academy</h2>
+                    <button id="kai-sol-close">&times;</button>
                 </div>
-                <div id="kai-sub" style="color: #666; margin: 10px 0;">Carregando lembretes…</div>
-                <div id="kai-motivacional" style="min-height: 20px;"></div>
-                <div id="kai-tasks"></div>
-                <div id="kai-events"></div>
+                <div id="kai-sol-body">
+                    <div id="kai-reminders" style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                            <h3 style="margin: 0; color: #1e3a8a; font-size: 18px;">Lembretes desta semana</h3>
+                            <div id="kai-presenca" style="min-height: 36px;"></div>
+                        </div>
+                        <div id="kai-sub" style="color: #64748b; margin: 10px 0; font-size: 14px;">Carregando pendências…</div>
+                        <div id="kai-motivacional" style="min-height: 20px;"></div>
+                        <div id="kai-tasks"></div>
+                        <div id="kai-events"></div>
+                    </div>
+                    <iframe id="widget-iframe" style="border: 1px solid #e2e8f0; width: 100%; height: 600px; min-height: 60vh; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);" src="${CONFIG.CHAT_URL}"></iframe>
+                </div>
             </div>
-            <p style="display: flex; justify-content: center;">
-                <iframe id="widget-iframe" style="border: 1px solid #ddd; width: 100%; max-width: 920px; height: 600px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" src="${CONFIG.CHAT_URL}"></iframe>
-            </p>
-        `;
-    } else {
-        console.log("❌ Âncora #kai-sol-root não encontrada nesta página.");
-        return;
+        </div>
+    `;
+    document.body.appendChild(widgetContainer);
+
+    // 1.3 Lógica de Abrir e Fechar o Widget
+    var fab = document.getElementById('kai-sol-fab');
+    var overlay = document.getElementById('kai-sol-overlay');
+    var modal = document.getElementById('kai-sol-modal');
+    var closeBtn = document.getElementById('kai-sol-close');
+
+    function openSol() {
+        overlay.style.display = 'flex';
+        // Pequeno delay para o efeito de transição funcionar
+        setTimeout(() => { 
+            overlay.style.opacity = '1'; 
+            modal.style.transform = 'translateY(0)'; 
+        }, 10);
+        // Só carrega as frases e os lembretes quando o aluno abre o modal
+        loadReminders(); 
     }
 
-    try {
-        var dlg = document.querySelector('.moodle-dialogue-base .moodle-dialogue, .modal-dialog');
-        if (dlg) { dlg.style.maxWidth = '1200px'; dlg.style.width = '95%'; }
-    } catch(e){}
+    function closeSol() {
+        overlay.style.opacity = '0';
+        modal.style.transform = 'translateY(20px)';
+        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+    }
+
+    fab.addEventListener('click', openSol);
+    closeBtn.addEventListener('click', closeSol);
+    overlay.addEventListener('click', function(e){
+        if(e.target === this) closeSol(); // Fecha se clicar fora da janela
+    });
+
 
     // =========================================================================
-    // 2. LÓGICA DA SOL ACADEMY
+    // 2. LÓGICA DA SOL ACADEMY (Lembretes, Frases e Api)
     // =========================================================================
     var TOKEN = CONFIG.TOKEN;
     var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;
@@ -132,7 +212,7 @@
       var last = parseInt(localStorage.getItem(key)||'0',10);
       var now = Date.now();
       
-      // TRAVA DE 2 HORAS (Para teste imediato, comente a linha abaixo com //)
+      // TRAVA DE 2 HORAS (Deixei desligada para você ver logo que abrir)
       // if (now - last < 2 * 60 * 60 * 1000) return;
       
       localStorage.setItem(key, String(now));
@@ -234,11 +314,11 @@
       var left = it.link ? '<a href="'+it.link+'" target="_blank" rel="noopener" style="color: #ea580c; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
                          : (it.url  ? '<a href="'+it.url+'" target="_blank" rel="noopener" style="color: #ea580c; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
                                     : cleanTitle(it.title));
-      return '<div style="margin:8px 0; padding:12px; border-left:4px solid #f97316; background:#fcfcfc; border-radius:0 8px 8px 0; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">'
+      return '<div style="margin:8px 0; padding:12px; border-left:4px solid #f97316; background:#f8fafc; border-radius:0 8px 8px 0; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">'
            +   '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
            +     left
            +   '</div>'
-           +   '<span style="color:#666;font-size:12px;flex-shrink:0; background: #eee; padding: 4px 8px; border-radius: 4px;">Até '+it.when+'</span>'
+           +   '<span style="color:#64748b;font-size:12px;flex-shrink:0; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-weight: 500;">Até '+it.when+'</span>'
            + '</div>';
     }
   
@@ -360,8 +440,8 @@
 
         mostrarFraseMotivacional(userId);
   
-        listTasks.innerHTML  = tasks.length  ? '<h4 style="margin-top:16px; color:#333;">📖 Tarefas</h4>'+tasks.map(renderItem).join('')  : '';
-        listEvents.innerHTML = events.length ? '<h4 style="margin-top:16px; color:#333;">📅 Eventos</h4>'+events.map(renderItem).join('') : '';
+        listTasks.innerHTML  = tasks.length  ? '<h4 style="margin-top:16px; color:#333; font-size:16px;">📖 Tarefas</h4>'+tasks.map(renderItem).join('')  : '';
+        listEvents.innerHTML = events.length ? '<h4 style="margin-top:16px; color:#333; font-size:16px;">📅 Eventos</h4>'+events.map(renderItem).join('') : '';
       })
       .catch(function(err){
         if (DEBUG_MODE) console.error('[DEBUG] Falha no loadReminders', err);
@@ -369,7 +449,7 @@
       });
     }
   
-    // Inicia tudo
+    // Inicia verificação de presença em background
     presenceFlowForCurrentUser();
-    loadReminders();
+    
 })();

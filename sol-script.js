@@ -2,7 +2,7 @@
     // =========================================================================
     // 0. TRAVA GLOBAL E LISTA DE CURSOS
     // =========================================================================
-    var CURSOS_ATIVOS = [1279, 1643]; 
+    var CURSOS_ATIVOS = [1279, 1643, 1306]; 
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
 
     if (!CURSOS_ATIVOS.includes(COURSE_ID)) {
@@ -24,14 +24,13 @@
     var style = document.createElement('style');
     style.innerHTML = `
         #kai-sol-fab {
-            position: fixed; bottom: 30px; right: 30px; z-index: 99999;
-            background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
-            color: #fff; padding: 14px 24px; border-radius: 50px;
+            position: fixed; bottom: 566px; right: 655px; z-index: 99999;
+            background: linear-gradient(135deg, #1047ad 0%, #1047ad 100%);
+            color: #fff; padding: 14px 10px; border-radius: 50px;
             font-family: system-ui,-apple-system,sans-serif; font-weight: 600; font-size: 16px;
-            box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4); cursor: pointer;
             display: flex; align-items: center; gap: 10px; transition: all 0.3s ease;
         }
-        #kai-sol-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 6px 20px rgba(234, 88, 12, 0.6); }
+        #kai-sol-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 6px 20px rgba(237, 228, 59, 0.99); }
         
         #kai-sol-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -51,7 +50,7 @@
             background: #1e3a8a; padding: 16px 24px; color: #fff;
             display: flex; justify-content: space-between; align-items: center;
         }
-        #kai-sol-header h2 { margin: 0; color: #fff; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 10px;}
+        #kai-sol-header h2 { margin: 0; color: #fff; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 5px;}
         #kai-sol-close {
             background: none; border: none; color: #fff; font-size: 28px;
             cursor: pointer; opacity: 0.8; transition: opacity 0.2s; padding: 0; line-height: 1;

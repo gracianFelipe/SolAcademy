@@ -24,13 +24,25 @@
     var style = document.createElement('style');
     style.innerHTML = `
         #kai-sol-fab {
-            position: fixed; bottom: 566px; right: 655px; z-index: 99999;
-            background: linear-gradient(135deg, #1047ad 0%, #1047ad 100%);
-            color: #fff; padding: 14px 10px; border-radius: 50px;
-            font-family: system-ui,-apple-system,sans-serif; font-weight: 600; font-size: 16px;
-            display: flex; align-items: center; gap: 10px; transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            font-weight: 600;
         }
-        #kai-sol-fab:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 6px 20px rgba(237, 228, 59, 0.99); }
+        #kai-sol-fab .sol-icon {
+            display: inline-block;
+            font-size: 20px;
+            transition: filter 0.3s ease, transform 0.3s ease;
+            animation: sol-pulse 2.5s ease-in-out infinite;
+        }
+        #kai-sol-fab:hover .sol-icon {
+            filter: drop-shadow(0 0 6px #facc15) drop-shadow(0 0 14px #fbbf24);
+            transform: scale(1.2);
+            animation: none;
+        }
+        @keyframes sol-pulse {
+            0%, 100% { filter: drop-shadow(0 0 0px transparent); }
+            50% { filter: drop-shadow(0 0 5px #f97316); }
+        }
         
         #kai-sol-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -61,13 +73,9 @@
     `;
     document.head.appendChild(style);
 
-    // A mágica acontece aqui: Colamos direto no BODY do site, sem âncora!
-    var widgetContainer = document.createElement('div');
-    widgetContainer.innerHTML = `
-        <div id="kai-sol-fab">
-            <span style="font-size: 20px;">🌞</span> Fale com a Sol
-        </div>
-        
+    // Overlay/modal on document.body (available immediately)
+    var overlayContainer = document.createElement('div');
+    overlayContainer.innerHTML = `
         <div id="kai-sol-overlay">
             <div id="kai-sol-modal">
                 <div id="kai-sol-header">
@@ -90,10 +98,8 @@
             </div>
         </div>
     `;
-    document.body.appendChild(widgetContainer);
+    document.body.appendChild(overlayContainer);
 
-    // Lógica de Abrir/Fechar
-    var fab = document.getElementById('kai-sol-fab');
     var overlay = document.getElementById('kai-sol-overlay');
     var modal = document.getElementById('kai-sol-modal');
     var closeBtn = document.getElementById('kai-sol-close');
@@ -113,11 +119,43 @@
         setTimeout(() => { overlay.style.display = 'none'; }, 300);
     }
 
-    fab.addEventListener('click', openSol);
     closeBtn.addEventListener('click', closeSol);
     overlay.addEventListener('click', function(e){
         if(e.target === this) closeSol(); 
     });
+
+    // Inject the nav item into Moodle's secondary navigation <ul>
+    // Uses MutationObserver to wait for the nav to be rendered
+    function injectNavItem() {
+        var navUl = document.querySelector('nav.moremenu ul[role="menubar"]');
+        if (!navUl) return false;
+
+        var solLi = document.createElement('li');
+        solLi.setAttribute('data-key', 'solacademy');
+        solLi.className = 'nav-item';
+        solLi.setAttribute('role', 'none');
+        solLi.setAttribute('data-forceintomoremenu', 'false');
+        solLi.innerHTML = '<a role="menuitem" id="kai-sol-fab" class="nav-link" href="javascript:void(0)" tabindex="-1"><span class="sol-icon">🌞</span> Sol Academy</a>';
+
+        var moreDropdown = navUl.querySelector('li[data-region="morebutton"]');
+        if (moreDropdown) {
+            navUl.insertBefore(solLi, moreDropdown);
+        } else {
+            navUl.appendChild(solLi);
+        }
+
+        document.getElementById('kai-sol-fab').addEventListener('click', openSol);
+        return true;
+    }
+
+    if (!injectNavItem()) {
+        var navObserver = new MutationObserver(function() {
+            if (injectNavItem()) {
+                navObserver.disconnect();
+            }
+        });
+        navObserver.observe(document.body, { childList: true, subtree: true });
+    }
 
     // =========================================================================
     // 2. LÓGICA DA SOL ACADEMY

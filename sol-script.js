@@ -1,17 +1,29 @@
 (function(){
     // =========================================================================
-    // 0. TRAVA GLOBAL E LISTA DE CURSOS
+    // 0. ROTEADOR DE CURSOS E BASES DE CONHECIMENTO (A Trava Inteligente)
     // =========================================================================
-    var CURSOS_ATIVOS = [1279, 1643, 1306]; 
+    // Mapeie os IDs dos cursos com os links da Zaia. 
+    // Coloquei os seus cursos antigos (1643, 1306) apontando para a Zaia também por segurança.
+    var ROTEADOR_SOL = {
+        1279: "https://platform.zaia.app/embed/chat/75208", // Curso de Teste
+        //1955: "https://platform.zaia.app/embed/chat/75208", // Direitos Humanos
+        1643: "https://platform.zaia.app/embed/chat/75208", // Outro curso
+        1306: "https://platform.zaia.app/embed/chat/75208"  // Outro curso
+    };
+
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
 
-    if (!CURSOS_ATIVOS.includes(COURSE_ID)) {
+    // Se o curso atual não estiver no roteador, o script morre e não aparece.
+    if (!ROTEADOR_SOL[COURSE_ID]) {
         return; 
     }
 
+    var CHAT_URL_ESPECIFICO = ROTEADOR_SOL[COURSE_ID];
+
     console.log("🌞 Sol Academy: Modo Widget ativado para o curso " + COURSE_ID);
+    console.log("🔗 Link da Zaia carregado: " + CHAT_URL_ESPECIFICO);
     
-    var CONFIG = window.SOL_CONFIG || { TOKEN: '', CHAT_URL: '' };
+    var CONFIG = window.SOL_CONFIG || { TOKEN: '' };
 
     // Evita que o botão seja criado duas vezes caso o Moodle recarregue a página por trás
     if (document.getElementById('kai-sol-fab')) {
@@ -19,7 +31,7 @@
     }
 
     // =========================================================================
-    // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (100% Autônomo)
+    // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (Menu Moodle)
     // =========================================================================
     var style = document.createElement('style');
     style.innerHTML = `
@@ -93,7 +105,7 @@
                         <div id="kai-tasks"></div>
                         <div id="kai-events"></div>
                     </div>
-                    <iframe id="widget-iframe" style="border: 1px solid #e2e8f0; width: 100%; height: 600px; min-height: 60vh; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);" src="${CONFIG.CHAT_URL}"></iframe>
+                    <iframe id="widget-iframe" style="border: 1px solid #e2e8f0; width: 100%; height: 600px; min-height: 60vh; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);" src="${CHAT_URL_ESPECIFICO}"></iframe>
                 </div>
             </div>
         </div>
@@ -158,7 +170,7 @@
     }
 
     // =========================================================================
-    // 2. LÓGICA DA SOL ACADEMY
+    // 2. LÓGICA DA SOL ACADEMY (Tarefas e Lembretes)
     // =========================================================================
     var TOKEN = CONFIG.TOKEN;
     var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;

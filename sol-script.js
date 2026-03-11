@@ -2,13 +2,9 @@
     // =========================================================================
     // 0. ROTEADOR DE CURSOS E BASES DE CONHECIMENTO (A Trava Inteligente)
     // =========================================================================
-    // Mapeie os IDs dos cursos com os links da Zaia. 
-    // Coloquei os seus cursos antigos (1643, 1306) apontando para a Zaia também por segurança.
     var ROTEADOR_SOL = {
-        1279: "https://platform.zaia.app/embed/chat/75208", // Curso de Teste
-        //1955: "https://platform.zaia.app/embed/chat/75208", // Direitos Humanos
-        1643: "https://platform.zaia.app/embed/chat/75208", // Outro curso
-        1306: "https://platform.zaia.app/embed/chat/75208"  // Outro curso
+        1279: "https://platform.zaia.app/embed/chat/63480", // Curso de Teste
+        //1955: "https://platform.zaia.app/embed/chat/63480", // Direitos Humanos
     };
 
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
@@ -18,9 +14,30 @@
         return; 
     }
 
-    var CHAT_URL_ESPECIFICO = ROTEADOR_SOL[COURSE_ID];
+    // =========================================================================
+    // 1. IDENTIDADE DO ALUNO (Histórico Pessoal na Zaia)
+    // =========================================================================
+    // Pega o ID e o Nome do aluno logado no Moodle
+    var USER_ID = (window.M && M.cfg && M.cfg.userid) ? parseInt(window.M.cfg.userid, 10) : Math.floor(Math.random() * 100000);
+    var USER_NAME = (window.M && M.cfg && M.cfg.fullname) ? window.M.cfg.fullname : "Aluno Moodle";
+
+    // Monta o pacote de dados EXATAMENTE como a Zaia exige
+    var customDataObj = {
+        userId: USER_ID,
+        userData: JSON.stringify({
+            name: USER_NAME,
+            curso: COURSE_ID
+        })
+    };
+
+    // Codifica o pacote para poder colocar no link sem quebrar a internet
+    var encodedCustomData = encodeURIComponent(JSON.stringify(customDataObj));
+
+    // Monta o link final com o pacote customizado
+    var CHAT_URL_ESPECIFICO = ROTEADOR_SOL[COURSE_ID] + "?custom=" + encodedCustomData;
 
     console.log("🌞 Sol Academy: Modo Widget ativado para o curso " + COURSE_ID);
+    console.log("👤 Aluno identificado: " + USER_NAME + " (ID: " + USER_ID + ")");
     console.log("🔗 Link da Zaia carregado: " + CHAT_URL_ESPECIFICO);
     
     var CONFIG = window.SOL_CONFIG || { TOKEN: '' };
@@ -29,6 +46,8 @@
     if (document.getElementById('kai-sol-fab')) {
         return;
     }
+
+    // ... O restante do código de construção do Widget continua aqui para baixo ...
 
     // =========================================================================
     // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (Menu Moodle)

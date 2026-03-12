@@ -4,7 +4,7 @@
     // =========================================================================
     var ROTEADOR_SOL = {
         1279: "https://platform.zaia.app/embed/chat/63480", // Curso de Teste
-        //1955: "https://platform.zaia.app/embed/chat/63480", // Direitos Humanos
+        1783: "https://platform.zaia.app/embed/chat/63480", // Direitos Humanos
     };
 
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;

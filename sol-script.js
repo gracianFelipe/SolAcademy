@@ -4,7 +4,8 @@
     // =========================================================================
     var ROTEADOR_SOL = {
         1279: "https://platform.zaia.app/embed/chat/63480", // Curso de Teste
-        1783: "https://platform.zaia.app/embed/chat/63480", // Direitos Humanos
+        1783: "https://platform.zaia.app/embed/chat/63480", // Educação em Direitos Humanos - M 
+        1956: "https://platform.zaia.app/embed/chat/63480", // Educação em Direitos Humanos - M
     };
 
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
@@ -46,8 +47,6 @@
     if (document.getElementById('kai-sol-fab')) {
         return;
     }
-
-    // ... O restante do código de construção do Widget continua aqui para baixo ...
 
     // =========================================================================
     // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (Menu Moodle)
@@ -115,12 +114,15 @@
                 </div>
                 <div id="kai-sol-body">
                     <div id="kai-reminders" style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                        
+                        <div id="kai-motivacional" style="min-height: 20px;"></div>
+                        
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 10px;">
                             <h3 style="margin: 0; color: #1e3a8a; font-size: 18px;">Lembretes desta semana</h3>
                             <div id="kai-presenca" style="min-height: 36px;"></div>
                         </div>
                         <div id="kai-sub" style="color: #64748b; margin: 10px 0; font-size: 14px;">Carregando pendências…</div>
-                        <div id="kai-motivacional" style="min-height: 20px;"></div>
+                        
                         <div id="kai-tasks"></div>
                         <div id="kai-events"></div>
                     </div>
@@ -195,73 +197,10 @@
     var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;
     var BASE  = ROOT + '/webservice/rest/server.php';
   
-    var WINDOW_DAYS = 7;
+    var WINDOW_DAYS = 20;
     var ABSENCE_SECONDS = 3 * 24 * 60 * 60; 
     var DEBUG_MODE = true;
-  
-    var frases = [
-      "Você está progredindo! Cada esforço de hoje é uma conquista para seu futuro. 😊",
-      "Seu potencial é maior do que você imagina. Continue avançando! 😊",
-      "Cada página lida é um passo a mais em direção ao seu sonho. 😊",
-      "Persistir é transformar pequenas vitórias em grandes conquistas. 😊",
-      "O estudo de hoje é a liberdade de escolha de amanhã. 😊",
-      "Você não precisa ser perfeito, só precisa continuar. 😊",
-      "O conhecimento que você busca hoje será sua força no futuro. 😊",
-      "Sua mente é como um músculo: quanto mais você a treina, mais forte ela fica. 😊",
-      "O esforço de hoje constrói as oportunidades de amanhã. 😊",
-      "Errar é parte do aprendizado, mas desistir nunca será. 😊",
-      "Grandes conquistas começam com pequenos hábitos de estudo. 😊",
-      "O futuro agradece o aluno dedicado que você escolhe ser hoje. 😊",
-      "Aprender é plantar sementes que darão frutos para a vida inteira. 😊",
-      "O conhecimento é a única riqueza que ninguém pode tirar de você. 😊",
-      "O cansaço passa, mas o orgulho de ter conseguido fica para sempre. 😊",
-      "Concentre-se no processo, e o resultado virá como consequência. 😊",
-      "Cada desafio vencido mostra que você está mais preparado do que pensa. 😊",
-      "Não compare sua jornada, cada aluno tem seu próprio ritmo. 😊",
-      "Avançar um pouco todos os dias vale mais do que parar esperando o momento perfeito. 😊",
-      "Você é capaz de aprender qualquer coisa, basta acreditar e praticar. 😊",
-      "Sua determinação é a chave que abre portas que parecem fechadas. 😊",
-      "Quando você estuda, está construindo pontes para seus sonhos. 😊",
-      "A disciplina é o caminho mais curto entre você e seu objetivo. 😊",
-      "Aprender é investir em si mesmo, e você é seu maior patrimônio. 😊",
-      "Lembre-se: você não está começando do zero, mas de onde parou ontem. 😊",
-      "Cada dúvida superada é uma vitória sobre o medo de errar. 😊",
-      "Não desista: até o passo mais lento ainda é movimento para frente. 😊",
-      "Cada dia de estudo é um tijolo no castelo dos seus sonhos. 😊",
-      "Estudar é transformar esforço em poder. 😊",
-      "Hoje pode ser difícil, mas você já está mais perto da sua vitória. 😊",
-      "O conhecimento abre portas que a força jamais conseguiria. 😊",
-      "Pequenos avanços diários constroem grandes resultados. 😊",
-      "Todo especialista já foi um iniciante que não desistiu. 😊",
-      "Estudar é acreditar que o amanhã pode ser melhor. 😊",
-      "Seu foco define sua direção, continue firme! 😊",
-      "A cada página estudada, um futuro mais claro se desenha. 😊",
-      "Estudar é um ato de coragem e amor próprio. 😊",
-      "A paciência e a disciplina sempre vencem a pressa. 😊",
-      "Nada pode parar um aluno determinado. 😊",
-      "Seus sonhos merecem a sua dedicação de hoje. 😊",
-      "O esforço pode ser silencioso, mas os resultados serão barulhentos. 😊",
-      "Grandes vitórias nascem da persistência em dias comuns. 😊",
-      "Não estude para passar, estude para aprender. 😊",
-      "Você já percorreu um longo caminho, siga em frente! 😊",
-      "A chave do sucesso é começar antes de se sentir pronto. 😊",
-      "Você é mais forte que as dificuldades que encontra. 😊",
-      "O saber é uma chama que nunca se apaga. 😊",
-      "Se você pode imaginar, também pode aprender. 😊",
-      "Estudar é plantar hoje para colher amanhã. 😊",
-      "O tempo dedicado ao aprendizado nunca é perdido. 😊",
-      "A educação é o passaporte para o futuro. 😊",
-      "Cada desafio enfrentado é uma prova de que você está evoluindo. 😊",
-      "Estudar é transformar curiosidade em poder. 😊",
-      "Você tem tudo o que precisa para conquistar o que deseja. 😊",
-      "O hábito de estudar hoje é o sucesso de amanhã. 😊",
-      "Quem estuda sempre encontra novos caminhos. 😊",
-      "Seu esforço é invisível para muitos, mas essencial para você. 😊",
-      "Estudar é acreditar no seu próprio crescimento. 😊",
-      "Nunca subestime o poder de uma hora bem estudada. 😊",
-      "Você está construindo um futuro brilhante, passo a passo. 😊"
-    ];
-  
+
     function mostrarFraseMotivacional(userId){
       var box = document.getElementById('kai-motivacional');
       if (!box) return; 
@@ -271,24 +210,39 @@
       var last = parseInt(localStorage.getItem(key)||'0',10);
       var now = Date.now();
       
-      // TRAVA DE 2 HORAS (Deixei desligada para você ver logo que abrir)
-      // if (now - last < 2 * 60 * 60 * 1000) return;
-      
       localStorage.setItem(key, String(now));
   
+      // 👇 A MÁGICA ACONTECE AQUI: Ela só puxa o banco de dados na hora de mostrar!
+      var frases = window.SOL_FRASES || ["Siga em frente, você está indo muito bem! 🌞"];
       var frase = frases[Math.floor(Math.random()*frases.length)];
   
       var div = document.createElement('div');
-      div.style.cssText = "margin:10px 0; padding:12px 16px; background:#fff7ed; color:#ea580c; border-left:4px solid #f97316; border-radius:0 8px 8px 0; font-size:14px; font-weight:500; opacity:1; transition:opacity 3s ease-out;";
+      div.style.cssText = "margin:10px 0; padding:12px 16px; background:#fff7ed; color:#1e3a8a; border-left:4px solid #1e3a8a; border-radius:0 8px 8px 0; font-size:14px; font-weight:500; opacity:1; transition:opacity 3s ease-out;";
       div.textContent = "💡 " + frase;
       
       box.innerHTML = '';
       box.appendChild(div);
   
+      // O TEMPORIZADOR DUPLO (Fade Out da frase -> Fade In do Sol)
       setTimeout(function(){
-        div.style.opacity = "0";
-        setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); }, 3000);
-      }, 10000);
+        div.style.opacity = "0"; // 1. A frase começa a sumir devagar
+        
+        setTimeout(function(){ 
+            if(div.parentNode) div.parentNode.removeChild(div); // 2. Remove a frase
+            
+            // 3. Cria o Sol invisível
+            var sol = document.createElement('div');
+            sol.style.cssText = "font-size: 28px; text-align: center; opacity: 0; transition: opacity 2s ease-in; margin: 10px 0;";
+            sol.textContent = "🌞";
+            box.appendChild(sol);
+            
+            // 4. Dá um peteleco no navegador para ele iniciar o Fade In
+            setTimeout(function() {
+                sol.style.opacity = "1"; 
+            }, 50);
+
+        }, 3000); // Tempo do Fade Out da frase (3 segundos)
+      }, 10000); // Tempo que a frase fica na tela (10 segundos)
     }
   
     function apiUrl(fn, params){
@@ -332,7 +286,7 @@
       var box=document.getElementById('kai-presenca'); if(!box) return;
       var banner=document.createElement('div');
       banner.style.cssText="padding:8px 12px;border:1px solid #f59e0b;border-radius:12px;color:#92400e;background:#fffbeb;font-size:13px;line-height:1.25;opacity:1;transition:opacity 7s ease-out;";
-      banner.innerHTML='<span>⏳</span> Olá aluno(a), notei que você não acessa a plataforma há algum tempo. Vamos retomar? — Sou a <b>Sol</b>, sua Tutora 😊';
+      banner.innerHTML='<span>⏳</span> Olá aluno(a), notei que você não acessa a plataforma há algum tempo. Vamos retomar? — Sou a <b>Sol</b>, sua Tutora 🌞';
       box.innerHTML=''; box.appendChild(banner);
       setTimeout(function(){ banner.style.opacity="0"; setTimeout(function(){ banner.remove(); },7000); },10000);
     }
@@ -370,11 +324,14 @@
     }
   
     function renderItem(it){
-      var left = it.link ? '<a href="'+it.link+'" target="_blank" rel="noopener" style="color: #ea580c; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
-                         : (it.url  ? '<a href="'+it.url+'" target="_blank" rel="noopener" style="color: #ea580c; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
+      // 1. Mudando a cor do texto do NOME da atividade (Link) para o seu azul escuro (#1e3a8a)
+      var left = it.link ? '<a href="'+it.link+'" target="_blank" rel="noopener" style="color: #1e3a8a; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
+                         : (it.url  ? '<a href="'+it.url+'" target="_blank" rel="noopener" style="color: #1e3a8a; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
                                     : cleanTitle(it.title));
-      return '<div style="margin:8px 0; padding:12px; border-left:4px solid #f97316; background:#f8fafc; border-radius:0 8px 8px 0; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">'
-           +   '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
+                                    
+      // 2. Aplicando a sua barrinha azul (#1e3a8a) e o fundo creme (#fff7ed) na caixa
+      return '<div style="margin:10px 0; padding:12px 16px; background:#fff7ed; border-left:4px solid #1e3a8a; border-radius:0 8px 8px 0; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">'
+           +   '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:14px;">'
            +     left
            +   '</div>'
            +   '<span style="color:#64748b;font-size:12px;flex-shrink:0; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-weight: 500;">Até '+it.when+'</span>'
@@ -388,127 +345,92 @@
       }
 
       var now = Math.floor(Date.now()/1000);
-      var in7 = now + WINDOW_DAYS*24*60*60;
-  
-      var urlAssign   = apiUrl('mod_assign_get_assignments', {'courseids[0]': COURSE_ID});
-      var urlCal      = apiUrl('core_calendar_get_calendar_events', {'events[courseids][0]': COURSE_ID, 'options[timestart]': now, 'options[timeend]': in7});
-      var urlContents = apiUrl('core_course_get_contents', {courseid: COURSE_ID});
+      var inWindow = now + WINDOW_DAYS*24*60*60;
+      var urlCal = apiUrl('core_calendar_get_calendar_events', {'events[courseids][0]': COURSE_ID, 'options[timestart]': now, 'options[timeend]': inWindow});
   
       resolveCurrentUser().then(async function(info){
         var userId = info.userid || 0;
-  
-        var [a, c, contents] = await Promise.all([
-          fetch(urlAssign).then(r=>r.json()).catch(()=>({})),
-          fetch(urlCal).then(r=>r.json()).catch(()=>({})),
-          fetch(urlContents).then(r=>r.json()).catch(()=>([]))
-        ]);
-  
-        var tasks=[], events=[];
-        var nameToCmid={};
-  
-        try{
-          (contents||[]).forEach(sec=>{
-            (sec.modules||[]).forEach(mod=>{
-              if(mod.modname==='assign'){ nameToCmid[norm(mod.name)] = mod.id; }
-            });
-          });
-        }catch(e){}
-  
-        try{
-          var courses = Array.isArray(a.courses) ? a.courses : [];
-          var courseBlock = courses.find(cc=>Number(cc.id)===Number(COURSE_ID)) || courses[0];
-          var assigns = (courseBlock && Array.isArray(courseBlock.assignments)) ? courseBlock.assignments : [];
-          for (var i=0;i<assigns.length;i++){
-            var asg = assigns[i], due = parseInt(asg.duedate||0,10);
-            if (due >= now && due <= in7){
-              tasks.push({
-                type:'assign', cmid: asg.cmid||null, url: asg.url||null,
-                title: asg.name||'Tarefa', when: fmtDate(due), ts: due,
-                link: asg.cmid ? linkEditSubmissionByCmid(asg.cmid)
-                               : (asg.url && /\/mod\/assign\//.test(asg.url) ? linkEditSubmissionFromURL(asg.url) : null)
-              });
-            }
-          }
-        }catch(e){}
+        
+        let c;
+        try { c = await fetch(urlCal).then(r=>r.json()); } catch(e) { c = {}; }
+        
+        var events = [];
   
         try{
           var evs = (c && c.events) ? c.events : [];
-          for (var j=0;j<evs.length;j++){
+          for (var j=0; j<evs.length; j++){
             var ev = evs[j], ts = parseInt(ev.timestart||0,10);
-            if (ts < now || ts > in7) continue;
-  
-            var title = ev.name || 'Evento';
-            var cmid  = Number.isInteger(ev.cmid) ? ev.cmid : guessCmidFromName(title, nameToCmid);
-            var link  = ev.url && /\/mod\/assign\//.test(ev.url)
-                          ? linkEditSubmissionFromURL(ev.url)
-                          : (cmid ? linkEditSubmissionByCmid(cmid)
-                                  : ROOT + '/mod/assign/index.php?id=' + COURSE_ID);
-  
-            events.push({ type:'event', title, when:fmtDate(ts), ts, url: ev.url||null, cmid, link });
+            if (ts < now || ts > inWindow) continue;
+            
+            var title = ev.name || 'Atividade';
+            
+            // 💡 EXTRATOR UNIVERSAL DE CMID (ID da atividade)
+            var cmid = ev.cmid;
+            if (!cmid && ev.coursemodule) {
+                cmid = (typeof ev.coursemodule === 'object') ? ev.coursemodule.id : ev.coursemodule;
+            }
+            
+            // 💡 EXTRATOR UNIVERSAL DE LINKS (Acha o link do Fórum na gaveta escondida)
+            var link = ev.url;
+            if (!link && ev.action && ev.action.url) {
+                link = ev.action.url; 
+            }
+            if (!link && cmid && ev.modulename) {
+                link = ROOT + '/mod/' + ev.modulename + '/view.php?id=' + cmid;
+            }
+            if (!link) {
+                link = ROOT + '/course/view.php?id=' + COURSE_ID;
+            }
+
+            // Se for tarefa (assign), tenta mandar direto para a tela de entrega
+            if (ev.modulename === 'assign' && link && !link.includes('action=editsubmission')) {
+                link = link + (link.includes('?') ? '&' : '?') + 'action=editsubmission';
+            }
+            
+            events.push({ type:'event', title, when:fmtDate(ts), ts, url: link, cmid, link });
           }
         }catch(e){}
   
-        tasks  = dedupeByCmid(tasks);
-        events = dedupeByCmid(events);
-
-        var taskCmids = new Set(tasks.map(t => resolveCmid(t)).filter(id => id));
-        var taskNames = new Set(tasks.map(t => norm(cleanTitle(t.title))));
-        
-        events = events.filter(function(ev){
-            var evCmid = resolveCmid(ev);
-            if (evCmid && taskCmids.has(evCmid)) return false;
-            if (taskNames.has(norm(cleanTitle(ev.title)))) return false;
-            return true;
-        });
-  
+        // Ocultar atividades que o aluno já completou
         if (userId){
           try{
             var comp = await fetch(apiUrl('core_completion_get_activities_completion_status', { courseid: COURSE_ID, userid: userId })).then(r=>r.json());
             var completed = new Set((comp.statuses||[]).filter(s=>s && s.state==1 && Number.isInteger(s.cmid)).map(s=>s.cmid));
-  
-            function hideIfCompletedFactory(){
-              return function(it){
+            events = events.filter(it => {
                 var cmid = resolveCmid(it);
-                if (!cmid) return true;
-                if (completed.has(cmid)) return false;
-                return true;
-              };
-            }
-  
-            tasks  = tasks.filter(hideIfCompletedFactory());
-            events = events.filter(hideIfCompletedFactory());
-          }catch(e){ if (DEBUG_MODE) console.warn('Falha ao ler conclusões', e); }
+                return !(cmid && completed.has(cmid));
+            });
+          }catch(e){}
         }
-  
-        tasks.sort((x,y)=>x.ts-y.ts);
+        
         events.sort((x,y)=>x.ts-y.ts);
-  
+        
         var listTasks  = document.getElementById('kai-tasks');
         var listEvents = document.getElementById('kai-events');
-  
-        if (!tasks.length && !events.length){
-          setSub('Nenhuma pendência para os próximos 7 dias. Ótimo trabalho!');
-          listTasks.innerHTML=''; listEvents.innerHTML='';
-          mostrarFraseMotivacional(userId);
-          return;
+        
+        if (!events.length){ 
+            setSub('Nenhuma pendência para os próximos ' + WINDOW_DAYS + ' dias. Ótimo trabalho!'); 
+            listTasks.innerHTML=''; 
+            listEvents.innerHTML=''; 
+            mostrarFraseMotivacional(userId); // Mostra a frase motivacional se não tiver tarefa
+            return; 
         }
-  
-        var totalPendencias = tasks.length + events.length;
-        var textoSub = totalPendencias === 1 ? '1 atividade pendente:' : totalPendencias + ' atividades pendentes:';
-        setSub(textoSub);
-
-        mostrarFraseMotivacional(userId);
-  
-        listTasks.innerHTML  = tasks.length  ? '<h4 style="margin-top:16px; color:#333; font-size:16px;">📖 Tarefas</h4>'+tasks.map(renderItem).join('')  : '';
-        listEvents.innerHTML = events.length ? '<h4 style="margin-top:16px; color:#333; font-size:16px;">📅 Eventos</h4>'+events.map(renderItem).join('') : '';
-      })
-      .catch(function(err){
-        if (DEBUG_MODE) console.error('[DEBUG] Falha no loadReminders', err);
-        setSub('Erro ao carregar os lembretes.');
+        
+        var totalPendencias = events.length;
+        setSub(totalPendencias === 1 ? '1 atividade pendente:' : totalPendencias + ' atividades pendentes:');
+        
+        mostrarFraseMotivacional(userId); // Mostra a frase motivacional se tiver tarefa
+        
+        // Limpa a tela e coloca Fóruns, Tarefas e Questionários tudo na mesma lista de Entregas
+        listTasks.innerHTML  = '';
+        listEvents.innerHTML = '<h4 style="margin-top:16px; color:#333; font-size:16px;">📖 Próximas Entregas</h4>'+events.map(renderItem).join('');
+      }).catch(function(err){ 
+          if (DEBUG_MODE) console.error('[DEBUG] Falha no loadReminders', err);
+          setSub('Erro ao carregar os lembretes.'); 
       });
     }
   
     // Inicia verificação de presença em background
     presenceFlowForCurrentUser();
-    
+
 })();

@@ -89,7 +89,7 @@ async function rodarSolAtiva() {
                                         <a href="${link}">🔗 Clique aqui para acessar a atividade</a>
                                     </li>`;
                     });
-                    htmlMsg += `</ul><p>Se estiver com alguma dúvida na matéria para fazer essas entregas, clique no menu Sol Academy no ambiente do curso e vamos bater um papo! Estou aqui para te ajudar. 🚀</p>`;
+                    htmlMsg += `</ul><p>Se estiver com alguma dúvida sobre o conteúdo, clique no menu Sol Academy no ambiente do curso e vamos conversar! Estarei aqui para te ajudar. 🚀</p>`;
                 } else {
                     htmlMsg = `<p>Olá, <b>${primeiroNome}</b>! 🌞</p><p>Aqui é a <b>Sol Academy</b>, sua tutora virtual da ESUP.</p><p>Passei aqui só para te dar os <b>parabéns</b>! 🎉 Analisei seu perfil e vi que você está com todas as suas atividades e fóruns em dia no curso.</p><p>Caso queira revisar alguma matéria ou aprofundar os estudos, estarei te esperando no chat. Aproveite a semana!</p>`;
                 }

@@ -1,0 +1,22 @@
+/* 1. Aumentamos o tamanho da letra (font-size: 16px) dos dois botões aqui */
+.kai-nav-btn { cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 16px; }
+
+/* 2. Aumentamos um pouco o tamanho do Sol para acompanhar a letra (22px) */
+.kai-nav-btn .sol-icon { display: inline-block; font-size: 22px; transition: filter 0.3s ease, transform 0.3s ease; animation: sol-pulse 2.5s ease-in-out infinite; }
+
+/* 3. Aumentamos o brilho quando passa o mouse por cima (de 14px para 22px de espalhamento) */
+.kai-nav-btn:hover .sol-icon { filter: drop-shadow(0 0 8px #facc15) drop-shadow(0 0 22px #fbbf24); transform: scale(1.2); animation: none; }
+
+/* 4. Aumentamos o brilho do pulsar natural (de 5px para 12px) */
+@keyframes sol-pulse { 
+    0%, 100% { filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.3)); } 
+    50% { filter: drop-shadow(0 0 12px #f97316); } 
+}
+
+.kai-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 999999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
+.kai-modal { background: #fff; width: 95%; max-width: 960px; height: 90vh; max-height: 850px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transform: translateY(20px); transition: transform 0.3s ease; font-family: system-ui,-apple-system,sans-serif; }
+.kai-header { padding: 16px 24px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+.kai-header h2 { margin: 0; color: #fff; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 5px;}
+.kai-close { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; padding: 0; line-height: 1; }
+.kai-close:hover { opacity: 1; }
+.kai-body { padding: 24px; overflow-y: auto; flex: 1; background: #f8fafc; }

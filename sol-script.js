@@ -26,38 +26,107 @@
     var CONFIG = window.SOL_CONFIG || { TOKEN: '' };
     var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;
 
+    // =========================================================================
+    // 1.5 ANALYTICS: INICIALIZAÇÃO E ENVIO (SUPABASE)
+    // =========================================================================
+    var supabaseUrl = 'https://qsvfivwnptsqhnmrobbq.supabase.co';
+    var supabaseKey = 'sb_publishable_zY0h5oUdc6KalFRM_YkiuQ__LItxgLk';
+    var supabaseClient = null;
+
+    var scriptSupabase = document.createElement('script');
+    scriptSupabase.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    scriptSupabase.onload = function() {
+        if (window.supabase) {
+            supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        }
+    };
+    document.head.appendChild(scriptSupabase);
+
+    var currentInteractionStart = null;
+    var currentInteractionDateStr = "";
+    var currentInteractionClicks = 0;
+    var currentInteractionType = ""; // 'Sol' ou 'Tutor'
+
+    function formatInteractionTime(ms) {
+        var min = Math.floor(ms / 60000);
+        var sec = Math.floor((ms % 60000) / 1000);
+        return (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
+    }
+
+    function formatExactDate(dateObj) {
+        var z = function(n) { return (n < 10 ? '0' : '') + n; };
+        return z(dateObj.getDate()) + '/' + z(dateObj.getMonth() + 1) + '/' + dateObj.getFullYear() + ' ' + z(dateObj.getHours()) + ':' + z(dateObj.getMinutes()) + ':' + z(dateObj.getSeconds());
+    }
+
+    function sendSupabaseAnalytics(durationMs, dateStr, clicks, tipo) {
+        if (!supabaseClient) return; // Se a biblioteca ainda não carregou ou não instanciou
+        
+        var turmaStr = COURSE_ID === 1783 ? 'Matutino' : (COURSE_ID === 1956 ? 'Noturno' : String(COURSE_ID));
+
+        var payload = {
+            moodle_id: USER_ID ? String(USER_ID) : "00000000000",
+            aluno_nome: USER_NAME,
+            turma: turmaStr,
+            tipo_interacao: tipo,
+            cliques: clicks,
+            tempo_uso: formatInteractionTime(durationMs),
+            data_interacao_local: dateStr
+        };
+
+        supabaseClient.from('analytics_tracking').insert([payload]).then(function() {
+            // Sucesso silencioso
+        }).catch(function() {
+            // Falha silenciosa
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.kai-modal')) {
+            currentInteractionClicks++;
+        }
+    });
+
+    function startInteraction(tipo) {
+        if (currentInteractionStart === null) {
+            var now = new Date();
+            currentInteractionStart = now.getTime();
+            currentInteractionDateStr = formatExactDate(now);
+            currentInteractionClicks = 1; // Click that opened it
+            currentInteractionType = tipo;
+        }
+    }
+
+    function endInteraction() {
+        if (currentInteractionStart !== null) {
+            var duration = Date.now() - currentInteractionStart;
+            sendSupabaseAnalytics(duration, currentInteractionDateStr, currentInteractionClicks, currentInteractionType);
+            currentInteractionStart = null;
+            currentInteractionDateStr = "";
+            currentInteractionClicks = 0;
+            currentInteractionType = "";
+        }
+    }
+
+    // Enviar dados ao trocar de aba ou sair
+    window.addEventListener('beforeunload', function() {
+        endInteraction();
+    });
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            endInteraction();
+        }
+    });
+
     // Evita botões duplicados
     if (document.getElementById('kai-sol-fab')) return;
 
     // =========================================================================
     // 2. ESTILOS VISUAIS (CSS)
     // =========================================================================
-    var style = document.createElement('style');
-    style.innerHTML = `
-        /* 1. Aumentamos o tamanho da letra (font-size: 16px) dos dois botões aqui */
-        .kai-nav-btn { cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 16px; }
-        
-        /* 2. Aumentamos um pouco o tamanho do Sol para acompanhar a letra (22px) */
-        .kai-nav-btn .sol-icon { display: inline-block; font-size: 22px; transition: filter 0.3s ease, transform 0.3s ease; animation: sol-pulse 2.5s ease-in-out infinite; }
-        
-        /* 3. Aumentamos o brilho quando passa o mouse por cima (de 14px para 22px de espalhamento) */
-        .kai-nav-btn:hover .sol-icon { filter: drop-shadow(0 0 8px #facc15) drop-shadow(0 0 22px #fbbf24); transform: scale(1.2); animation: none; }
-        
-        /* 4. Aumentamos o brilho do pulsar natural (de 5px para 12px) */
-        @keyframes sol-pulse { 
-            0%, 100% { filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.3)); } 
-            50% { filter: drop-shadow(0 0 12px #f97316); } 
-        }
-        
-        .kai-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 999999; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
-        .kai-modal { background: #fff; width: 95%; max-width: 960px; height: 90vh; max-height: 850px; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); transform: translateY(20px); transition: transform 0.3s ease; font-family: system-ui,-apple-system,sans-serif; }
-        .kai-header { padding: 16px 24px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-        .kai-header h2 { margin: 0; color: #fff; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 5px;}
-        .kai-close { background: none; border: none; color: #fff; font-size: 28px; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; padding: 0; line-height: 1; }
-        .kai-close:hover { opacity: 1; }
-        .kai-body { padding: 24px; overflow-y: auto; flex: 1; background: #f8fafc; }
-    `;
-    document.head.appendChild(style);
+    var cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'https://raw.githack.com/gracianFelipe/SolAcademy/main/sol-styles.css?nocache=' + new Date().getTime();
+    document.head.appendChild(cssLink);
 
     // =========================================================================
     // 3. CONSTRUÇÃO DO WIDGET DA SOL ACADEMY
@@ -92,8 +161,8 @@
     var sModal = document.getElementById('kai-sol-modal');
     var sCloseBtn = document.getElementById('kai-sol-close');
 
-    function openSol() { sOverlay.style.display = 'flex'; setTimeout(() => { sOverlay.style.opacity = '1'; sModal.style.transform = 'translateY(0)'; }, 10); loadReminders(); }
-    function closeSol() { sOverlay.style.opacity = '0'; sModal.style.transform = 'translateY(20px)'; setTimeout(() => { sOverlay.style.display = 'none'; }, 300); }
+    function openSol() { startInteraction('Sol'); sOverlay.style.display = 'flex'; setTimeout(() => { sOverlay.style.opacity = '1'; sModal.style.transform = 'translateY(0)'; }, 10); loadReminders(); }
+    function closeSol() { endInteraction(); sOverlay.style.opacity = '0'; sModal.style.transform = 'translateY(20px)'; setTimeout(() => { sOverlay.style.display = 'none'; }, 300); }
     sCloseBtn.addEventListener('click', closeSol);
     sOverlay.addEventListener('click', function(e){ if(e.target === this) closeSol(); });
 
@@ -157,8 +226,8 @@
             }
         };
 
-        window.openTutor = function() { tOverlay.style.display = 'flex'; setTimeout(() => { tOverlay.style.opacity = '1'; tModal.style.transform = 'translateY(0)'; }, 10); };
-        window.closeTutor = function() { tOverlay.style.opacity = '0'; tModal.style.transform = 'translateY(20px)'; setTimeout(() => { tOverlay.style.display = 'none'; }, 300); };
+        window.openTutor = function() { startInteraction('Tutor'); tOverlay.style.display = 'flex'; setTimeout(() => { tOverlay.style.opacity = '1'; tModal.style.transform = 'translateY(0)'; }, 10); };
+        window.closeTutor = function() { endInteraction(); tOverlay.style.opacity = '0'; tModal.style.transform = 'translateY(20px)'; setTimeout(() => { tOverlay.style.display = 'none'; }, 300); };
         
         tCloseBtn.addEventListener('click', window.closeTutor);
         tOverlay.addEventListener('click', function(e){ if(e.target === this) window.closeTutor(); });

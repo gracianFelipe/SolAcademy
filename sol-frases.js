@@ -1,3 +1,9 @@
+/**
+ * ARQUIVO: sol-frases.js
+ * DESCRIÇÃO: Este script contém o banco de frases motivacionais da Sol Academy.
+ * Ele define um array com diversas mensagens encorajadoras que são sorteadas e exibidas 
+ * aos alunos no painel do widget para incentivar o engajamento e a dedicação nos estudos.
+ */
 // =========================================================================
 // BANCO DE FRASES MOTIVACIONAIS DA SOL ACADEMY (sol-frases.js)
 // =========================================================================

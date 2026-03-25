@@ -1,3 +1,9 @@
+/**
+ * ARQUIVO: helpers.js
+ * DESCRIÇÃO: Funções utilitárias reaproveitáveis dentro do projeto Sol Ativa.
+ * Contém pequenos trechos de lógica repetitiva, como formatação de data/hora (timestamp)
+ * e gerador inteligente de links dinâmicos para cada tipo de atividade no Moodle.
+ */
 function formatarData(timestamp) {
     const d = new Date(timestamp * 1000);
     const z = n => (n < 10 ? '0' : '') + n;

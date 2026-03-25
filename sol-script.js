@@ -1,3 +1,13 @@
+/**
+ * ARQUIVO: sol-script.js
+ * DESCRIÇÃO: Script principal da Sol Academy. Este script é responsável por:
+ * 1. Inicializar o widget do assistente (Sol ou Tutor) de acordo com o curso atual do Moodle.
+ * 2. Capturar o tempo de uso e os cliques em tela, registrando métricas no Supabase (Analytics).
+ * 3. Injetar a interface de usuário: os modais de chat, botões para abrir/fechar, e carregar
+ *    os "Lembretes e Pendências", se conectando com o webservice nativo do Moodle.
+ * 4. Adaptar dinamicamente a view original do Moodle, por exemplo escondendo as abas do
+ *    layout da mensagem do Tutor para focar em total imersão no iframe do Chat.
+ */
 (function(){
     // =========================================================================
     // 0. ROTEADOR CENTRAL DE CURSOS E TRAVA DE SEGURANÇA
@@ -14,8 +24,9 @@
     // =========================================================================
     // 1. IDENTIDADE DO ALUNO E PREPARAÇÃO DO LINK
     // =========================================================================
-    var USER_ID = (window.M && M.cfg && M.cfg.userid) ? parseInt(window.M.cfg.userid, 10) : Math.floor(Math.random() * 100000);
-    var USER_NAME = (window.M && M.cfg && M.cfg.fullname) ? window.M.cfg.fullname : "Aluno Moodle";
+    var CONFIG = window.SOL_CONFIG || { TOKEN: '' };
+    var USER_ID = CONFIG.USER_ID || ((window.M && M.cfg && M.cfg.userid) ? parseInt(window.M.cfg.userid, 10) : Math.floor(Math.random() * 100000));
+    var USER_NAME = CONFIG.USER_NAME || ((window.M && M.cfg && M.cfg.fullname) ? window.M.cfg.fullname : "Aluno Moodle");
 
     var customDataObj = { userId: USER_ID, userData: JSON.stringify({ name: USER_NAME, curso: COURSE_ID }) };
     var encodedCustomData = encodeURIComponent(JSON.stringify(customDataObj));
@@ -23,20 +34,19 @@
 
     console.log("🌞 Sol Academy: Modo Widget ativado para o curso " + COURSE_ID);
     
-    var CONFIG = window.SOL_CONFIG || { TOKEN: '' };
     var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;
 
     // =========================================================================
     // 1.5 ANALYTICS: INICIALIZAÇÃO E ENVIO (SUPABASE)
     // =========================================================================
-    var supabaseUrl = 'https://qsvfivwnptsqhnmrobbq.supabase.co';
-    var supabaseKey = 'sb_publishable_zY0h5oUdc6KalFRM_YkiuQ__LItxgLk';
+    var supabaseUrl = CONFIG.SUPABASE_URL;
+    var supabaseKey = CONFIG.SUPABASE_KEY;
     var supabaseClient = null;
 
     var scriptSupabase = document.createElement('script');
     scriptSupabase.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
     scriptSupabase.onload = function() {
-        if (window.supabase) {
+        if (window.supabase && supabaseUrl && supabaseKey) {
             supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
         }
     };
@@ -132,29 +142,7 @@
     // 3. CONSTRUÇÃO DO WIDGET DA SOL ACADEMY
     // =========================================================================
     var solOverlayContainer = document.createElement('div');
-    solOverlayContainer.innerHTML = `
-        <div id="kai-sol-overlay" class="kai-overlay">
-            <div id="kai-sol-modal" class="kai-modal">
-                <div class="kai-header" style="background: #1e3a8a;">
-                    <h2><span>🌞</span> Sol Academy</h2>
-                    <button id="kai-sol-close" class="kai-close">&times;</button>
-                </div>
-                <div class="kai-body">
-                    <div id="kai-reminders" style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        <div id="kai-motivacional" style="min-height: 20px;"></div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 10px;">
-                            <h3 style="margin: 0; color: #1e3a8a; font-size: 18px;">Lembretes desta semana</h3>
-                            <div id="kai-presenca" style="min-height: 36px;"></div>
-                        </div>
-                        <div id="kai-sub" style="color: #64748b; margin: 10px 0; font-size: 14px;">Carregando pendências…</div>
-                        <div id="kai-tasks"></div>
-                        <div id="kai-events"></div>
-                    </div>
-                    <iframe id="widget-iframe" style="border: 1px solid #e2e8f0; width: 100%; height: 600px; min-height: 60vh; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);" src="${CHAT_URL_ESPECIFICO}"></iframe>
-                </div>
-            </div>
-        </div>
-    `;
+    solOverlayContainer.innerHTML = window.SOL_TEMPLATES.solOverlay(CHAT_URL_ESPECIFICO);
     document.body.appendChild(solOverlayContainer);
 
     var sOverlay = document.getElementById('kai-sol-overlay');
@@ -171,19 +159,7 @@
     // =========================================================================
     if (COURSE_ID === 1956) {
         var tutorOverlayContainer = document.createElement('div');
-        tutorOverlayContainer.innerHTML = `
-            <div id="kai-tutor-overlay" class="kai-overlay">
-                <div id="kai-tutor-modal" class="kai-modal" style="max-width: 800px; height: 85vh;">
-                    <div class="kai-header" style="background: #0f47ad;">
-                        <h2 style="gap: 8px;">🎓 Fale com o Tutor</h2>
-                        <button id="kai-tutor-close" class="kai-close">&times;</button>
-                    </div>
-                    <div class="kai-body" style="padding: 0; position: relative;">
-                        <iframe id="kai-tutor-iframe" style="width: 100%; height: 100%; border: none;" src="https://atp.esup.edu.br/message/index.php?id=687"></iframe>
-                    </div>
-                </div>
-            </div>
-        `;
+        tutorOverlayContainer.innerHTML = window.SOL_TEMPLATES.tutorOverlay();
         document.body.appendChild(tutorOverlayContainer);
 
         var tOverlay = document.getElementById('kai-tutor-overlay');

@@ -1,3 +1,10 @@
+/**
+ * ARQUIVO: app.js
+ * DESCRIÇÃO: Ponto de entrada (engine) da "Sol Ativa", o envio de mensagens proativas no Moodle.
+ * Este script roda em background (Node.js), varrendo os alunos matriculados, seu progresso
+ * (completion) e eventos do calendário do curso. Ele envia automaticamente mensagens instantâneas
+ * (DM) no Moodle para engajar alunos em dia ou cobrar quem está com atividades atrasadas/ausentes.
+ */
 const { CURSOS_IDS } = require('./config/env');
 const { moodleAPI } = require('./services/moodle');
 const { formatarData, extrairLinkAtividade } = require('./utils/helpers');

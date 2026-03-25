@@ -3,6 +3,8 @@ node_modules/
 
 # Arquivos de Senhas e Variáveis de Ambiente
 .env
+env.js
+src/config/env.js
 
 # Logs de Erro
 npm-debug.log*

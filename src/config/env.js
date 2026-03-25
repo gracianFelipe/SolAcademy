@@ -1,3 +1,9 @@
+/**
+ * ARQUIVO: env.js
+ * DESCRIÇÃO: Módulo de configuração de ambiente para a Sol Ativa.
+ * Carrega e exporta variáveis contidas no arquivo ".env" (URL do Moodle, Token do Webservice) 
+ * de forma segura e extrai automaticamente os IDs dos cursos monitorados a partir de sol-cursos.js.
+ */
 require('dotenv').config();
 const ROTEADOR_SOL = require('../../sol-cursos.js'); // Puxa o arquivo central
 

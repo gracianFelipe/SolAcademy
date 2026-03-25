@@ -1,3 +1,10 @@
+/**
+ * ARQUIVO: sol-styles.css
+ * DESCRIÇÃO: Folha de estilos (CSS) que controla a aparência do widget Sol Academy.
+ * Define botões, modais, cores, animações de brilho (pulsar) e o layout dos elementos 
+ * que são injetados no frontend do Moodle.
+ */
+
 /* 1. Aumentamos o tamanho da letra (font-size: 16px) dos dois botões aqui */
 .kai-nav-btn { cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 16px; }
 

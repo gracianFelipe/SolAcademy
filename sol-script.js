@@ -1,343 +1,285 @@
+/**
+ * ARQUIVO: sol-script.js
+ * DESCRIÇÃO: Script principal da Sol Academy. Este script é responsável por:
+ * 1. Inicializar o widget do assistente (Sol ou Tutor) de acordo com o curso atual do Moodle.
+ * 2. Capturar o tempo de uso e os cliques em tela, registrando métricas no Supabase (Analytics).
+ * 3. Injetar a interface de usuário: os modais de chat, botões para abrir/fechar, e carregar
+ *    os "Lembretes e Pendências", se conectando com o webservice nativo do Moodle.
+ * 4. Adaptar dinamicamente a view original do Moodle, por exemplo escondendo as abas do
+ *    layout da mensagem do Tutor para focar em total imersão no iframe do Chat.
+ */
 (function(){
     // =========================================================================
-    // 0. TRAVA GLOBAL E LISTA DE CURSOS
+    // 0. ROTEADOR CENTRAL DE CURSOS E TRAVA DE SEGURANÇA
     // =========================================================================
-    var CURSOS_ATIVOS = [1279, 1643, 1306]; 
+    var ROTEADOR_SOL = window.ROTEADOR_SOL || {};
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
 
-    if (!CURSOS_ATIVOS.includes(COURSE_ID)) {
+    // Se o curso atual não estiver no roteador (ou se o aluno estiver no Painel Inicial), o script morre.
+    if (!ROTEADOR_SOL[COURSE_ID]) {
+        console.log("🌞 Sol Academy: Oculta nesta página (Curso " + COURSE_ID + " não está no roteador).");
         return; 
     }
 
+    // =========================================================================
+    // 1. IDENTIDADE DO ALUNO E PREPARAÇÃO DO LINK
+    // =========================================================================
+    var CONFIG = window.SOL_CONFIG || { TOKEN: '' };
+    var USER_ID = CONFIG.USER_ID || ((window.M && M.cfg && M.cfg.userid) ? parseInt(window.M.cfg.userid, 10) : Math.floor(Math.random() * 100000));
+    var USER_NAME = CONFIG.USER_NAME || ((window.M && M.cfg && M.cfg.fullname) ? window.M.cfg.fullname : "Aluno Moodle");
+
+    var customDataObj = { userId: USER_ID, userData: JSON.stringify({ name: USER_NAME, curso: COURSE_ID }) };
+    var encodedCustomData = encodeURIComponent(JSON.stringify(customDataObj));
+    var CHAT_URL_ESPECIFICO = ROTEADOR_SOL[COURSE_ID] + "?custom=" + encodedCustomData;
+
     console.log("🌞 Sol Academy: Modo Widget ativado para o curso " + COURSE_ID);
     
-    var CONFIG = window.SOL_CONFIG || { TOKEN: '', CHAT_URL: '' };
-
-    // Evita que o botão seja criado duas vezes caso o Moodle recarregue a página por trás
-    if (document.getElementById('kai-sol-fab')) {
-        return;
-    }
+    var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;
 
     // =========================================================================
-    // 1. CONSTRUÇÃO DO WIDGET FLUTUANTE (100% Autônomo)
+    // 1.5 ANALYTICS: INICIALIZAÇÃO E ENVIO (SUPABASE)
     // =========================================================================
-    var style = document.createElement('style');
-    style.innerHTML = `
-        #kai-sol-fab {
-            cursor: pointer;
-            display: flex; align-items: center; gap: 6px;
-            font-weight: 600;
-        }
-        #kai-sol-fab .sol-icon {
-            display: inline-block;
-            font-size: 20px;
-            transition: filter 0.3s ease, transform 0.3s ease;
-            animation: sol-pulse 2.5s ease-in-out infinite;
-        }
-        #kai-sol-fab:hover .sol-icon {
-            filter: drop-shadow(0 0 6px #facc15) drop-shadow(0 0 14px #fbbf24);
-            transform: scale(1.2);
-            animation: none;
-        }
-        @keyframes sol-pulse {
-            0%, 100% { filter: drop-shadow(0 0 0px transparent); }
-            50% { filter: drop-shadow(0 0 5px #f97316); }
-        }
-        
-        #kai-sol-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-            z-index: 999999; display: none; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s ease;
-        }
-        
-        #kai-sol-modal {
-            background: #fff; width: 95%; max-width: 960px; height: 90vh; max-height: 850px;
-            border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3); transform: translateY(20px); transition: transform 0.3s ease;
-            font-family: system-ui,-apple-system,sans-serif;
-        }
-        
-        #kai-sol-header {
-            background: #1e3a8a; padding: 16px 24px; color: #fff;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        #kai-sol-header h2 { margin: 0; color: #fff; font-size: 20px; font-weight: 600; display: flex; align-items: center; gap: 5px;}
-        #kai-sol-close {
-            background: none; border: none; color: #fff; font-size: 28px;
-            cursor: pointer; opacity: 0.8; transition: opacity 0.2s; padding: 0; line-height: 1;
-        }
-        #kai-sol-close:hover { opacity: 1; }
-        
-        #kai-sol-body { padding: 24px; overflow-y: auto; flex: 1; background: #f8fafc; }
-    `;
-    document.head.appendChild(style);
+    var supabaseUrl = CONFIG.SUPABASE_URL;
+    var supabaseKey = CONFIG.SUPABASE_KEY;
+    var supabaseClient = null;
 
-    // Overlay/modal on document.body (available immediately)
-    var overlayContainer = document.createElement('div');
-    overlayContainer.innerHTML = `
-        <div id="kai-sol-overlay">
-            <div id="kai-sol-modal">
-                <div id="kai-sol-header">
-                    <h2><span>🌞</span> Sol Academy</h2>
-                    <button id="kai-sol-close">&times;</button>
-                </div>
-                <div id="kai-sol-body">
-                    <div id="kai-reminders" style="background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 24px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-                            <h3 style="margin: 0; color: #1e3a8a; font-size: 18px;">Lembretes desta semana</h3>
-                            <div id="kai-presenca" style="min-height: 36px;"></div>
-                        </div>
-                        <div id="kai-sub" style="color: #64748b; margin: 10px 0; font-size: 14px;">Carregando pendências…</div>
-                        <div id="kai-motivacional" style="min-height: 20px;"></div>
-                        <div id="kai-tasks"></div>
-                        <div id="kai-events"></div>
-                    </div>
-                    <iframe id="widget-iframe" style="border: 1px solid #e2e8f0; width: 100%; height: 600px; min-height: 60vh; border-radius: 12px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);" src="${CONFIG.CHAT_URL}"></iframe>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(overlayContainer);
+    var scriptSupabase = document.createElement('script');
+    scriptSupabase.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    scriptSupabase.onload = function() {
+        if (window.supabase && supabaseUrl && supabaseKey) {
+            supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        }
+    };
+    document.head.appendChild(scriptSupabase);
 
-    var overlay = document.getElementById('kai-sol-overlay');
-    var modal = document.getElementById('kai-sol-modal');
-    var closeBtn = document.getElementById('kai-sol-close');
+    var currentInteractionStart = null;
+    var currentInteractionDateStr = "";
+    var currentInteractionClicks = 0;
+    var currentInteractionType = ""; // 'Sol' ou 'Tutor'
 
-    function openSol() {
-        overlay.style.display = 'flex';
-        setTimeout(() => { 
-            overlay.style.opacity = '1'; 
-            modal.style.transform = 'translateY(0)'; 
-        }, 10);
-        loadReminders(); 
+    function formatInteractionTime(ms) {
+        var min = Math.floor(ms / 60000);
+        var sec = Math.floor((ms % 60000) / 1000);
+        return (min < 10 ? '0' : '') + min + ':' + (sec < 10 ? '0' : '') + sec;
     }
 
-    function closeSol() {
-        overlay.style.opacity = '0';
-        modal.style.transform = 'translateY(20px)';
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
+    function formatExactDate(dateObj) {
+        var z = function(n) { return (n < 10 ? '0' : '') + n; };
+        return z(dateObj.getDate()) + '/' + z(dateObj.getMonth() + 1) + '/' + dateObj.getFullYear() + ' ' + z(dateObj.getHours()) + ':' + z(dateObj.getMinutes()) + ':' + z(dateObj.getSeconds());
     }
 
-    closeBtn.addEventListener('click', closeSol);
-    overlay.addEventListener('click', function(e){
-        if(e.target === this) closeSol(); 
+    function sendSupabaseAnalytics(durationMs, dateStr, clicks, tipo) {
+        if (!supabaseClient) return; // Se a biblioteca ainda não carregou ou não instanciou
+        
+        var turmaStr = COURSE_ID === 1783 ? 'Matutino' : (COURSE_ID === 1956 ? 'Noturno' : String(COURSE_ID));
+
+        var payload = {
+            moodle_id: USER_ID ? String(USER_ID) : "00000000000",
+            aluno_nome: USER_NAME,
+            turma: turmaStr,
+            tipo_interacao: tipo,
+            cliques: clicks,
+            tempo_uso: formatInteractionTime(durationMs),
+            data_interacao_local: dateStr
+        };
+
+        supabaseClient.from('analytics_tracking').insert([payload]).then(function() {
+            // Sucesso silencioso
+        }).catch(function() {
+            // Falha silenciosa
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.kai-modal')) {
+            currentInteractionClicks++;
+        }
     });
 
-    // Inject the nav item into Moodle's secondary navigation <ul>
-    // Uses MutationObserver to wait for the nav to be rendered
+    function startInteraction(tipo) {
+        if (currentInteractionStart === null) {
+            var now = new Date();
+            currentInteractionStart = now.getTime();
+            currentInteractionDateStr = formatExactDate(now);
+            currentInteractionClicks = 1; // Click that opened it
+            currentInteractionType = tipo;
+        }
+    }
+
+    function endInteraction() {
+        if (currentInteractionStart !== null) {
+            var duration = Date.now() - currentInteractionStart;
+            sendSupabaseAnalytics(duration, currentInteractionDateStr, currentInteractionClicks, currentInteractionType);
+            currentInteractionStart = null;
+            currentInteractionDateStr = "";
+            currentInteractionClicks = 0;
+            currentInteractionType = "";
+        }
+    }
+
+    // Enviar dados ao trocar de aba ou sair
+    window.addEventListener('beforeunload', function() {
+        endInteraction();
+    });
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            endInteraction();
+        }
+    });
+
+    // Evita botões duplicados
+    if (document.getElementById('kai-sol-fab')) return;
+
+    // =========================================================================
+    // 2. ESTILOS VISUAIS (CSS)
+    // =========================================================================
+    var cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'https://raw.githack.com/gracianFelipe/SolAcademy/main/sol-styles.css?nocache=' + new Date().getTime();
+    document.head.appendChild(cssLink);
+
+    // =========================================================================
+    // 3. CONSTRUÇÃO DO WIDGET DA SOL ACADEMY
+    // =========================================================================
+    var solOverlayContainer = document.createElement('div');
+    solOverlayContainer.innerHTML = window.SOL_TEMPLATES.solOverlay(CHAT_URL_ESPECIFICO);
+    document.body.appendChild(solOverlayContainer);
+
+    var sOverlay = document.getElementById('kai-sol-overlay');
+    var sModal = document.getElementById('kai-sol-modal');
+    var sCloseBtn = document.getElementById('kai-sol-close');
+
+    function openSol() { startInteraction('Sol'); sOverlay.style.display = 'flex'; setTimeout(() => { sOverlay.style.opacity = '1'; sModal.style.transform = 'translateY(0)'; }, 10); loadReminders(); }
+    function closeSol() { endInteraction(); sOverlay.style.opacity = '0'; sModal.style.transform = 'translateY(20px)'; setTimeout(() => { sOverlay.style.display = 'none'; }, 300); }
+    sCloseBtn.addEventListener('click', closeSol);
+    sOverlay.addEventListener('click', function(e){ if(e.target === this) closeSol(); });
+
+    // =========================================================================
+    // 4. CONSTRUÇÃO DO WIDGET DA PROFESSORA (APENAS CURSO 1956)
+    // =========================================================================
+    if (COURSE_ID === 1956) {
+        var tutorOverlayContainer = document.createElement('div');
+        tutorOverlayContainer.innerHTML = window.SOL_TEMPLATES.tutorOverlay();
+        document.body.appendChild(tutorOverlayContainer);
+
+        var tOverlay = document.getElementById('kai-tutor-overlay');
+        var tModal = document.getElementById('kai-tutor-modal');
+        var tCloseBtn = document.getElementById('kai-tutor-close');
+        var tIframe = document.getElementById('kai-tutor-iframe'); // Pegamos o iframe!
+
+        // 🎯 A MÁGICA: Quando o iframe carregar, injetamos CSS para esconder o Moodle!
+        tIframe.onload = function() {
+            try {
+                var iframeDoc = tIframe.contentDocument || tIframe.contentWindow.document;
+                var style = iframeDoc.createElement('style');
+                style.innerHTML = `
+                    /* 1. Esconde cabeçalho, rodapé e menus do Moodle */
+                    header, footer, nav, #page-header, #page-footer, #nav-drawer, .navbar, .fixed-top, .secondary-navigation, [data-region="drawer"] { 
+                        display: none !important; 
+                    }
+                    /* 2. Tira margens do Moodle */
+                    #page, #page-wrapper, #page-content, #region-main, #region-main-box { 
+                        margin: 0 !important; 
+                        padding: 0 !important; 
+                        border: none !important; 
+                        background: #fff !important; 
+                    }
+                    /* 3. A MÁGICA DO CHAT: Esconde a lista de contatos/grupos (Esquerda) */
+                    .message-app [data-region="view-overview"], 
+                    .message-app .list-group { 
+                        display: none !important; 
+                    }
+                    /* 4. Expande o Chat da Professora para 100% da tela (Direita) */
+                    .message-app [data-region="view-conversation"] { 
+                        width: 100% !important; 
+                        max-width: 100% !important;
+                        flex: 1 1 100% !important; 
+                    }
+                `;
+                iframeDoc.head.appendChild(style);
+            } catch (e) {
+                console.log("🌞 Sol Academy: Aviso - Não foi possível esconder o layout do Moodle no iframe.");
+            }
+        };
+
+        window.openTutor = function() { startInteraction('Tutor'); tOverlay.style.display = 'flex'; setTimeout(() => { tOverlay.style.opacity = '1'; tModal.style.transform = 'translateY(0)'; }, 10); };
+        window.closeTutor = function() { endInteraction(); tOverlay.style.opacity = '0'; tModal.style.transform = 'translateY(20px)'; setTimeout(() => { tOverlay.style.display = 'none'; }, 300); };
+        
+        tCloseBtn.addEventListener('click', window.closeTutor);
+        tOverlay.addEventListener('click', function(e){ if(e.target === this) window.closeTutor(); });
+    }
+
+    // =========================================================================
+    // 5. INJEÇÃO DOS BOTÕES NO MENU DO MOODLE
+    // =========================================================================
     function injectNavItem() {
         var navUl = document.querySelector('nav.moremenu ul[role="menubar"]');
         if (!navUl) return false;
 
-        var solLi = document.createElement('li');
-        solLi.setAttribute('data-key', 'solacademy');
-        solLi.className = 'nav-item';
-        solLi.setAttribute('role', 'none');
-        solLi.setAttribute('data-forceintomoremenu', 'false');
-        solLi.innerHTML = '<a role="menuitem" id="kai-sol-fab" class="nav-link" href="javascript:void(0)" tabindex="-1"><span class="sol-icon">🌞</span> Sol Academy</a>';
-
         var moreDropdown = navUl.querySelector('li[data-region="morebutton"]');
-        if (moreDropdown) {
-            navUl.insertBefore(solLi, moreDropdown);
-        } else {
-            navUl.appendChild(solLi);
+
+        // Botão da Sol (Para todos os cursos autorizados)
+        if (!document.getElementById('kai-sol-fab')) {
+            var solLi = document.createElement('li');
+            solLi.className = 'nav-item';
+            solLi.setAttribute('role', 'none');
+            solLi.innerHTML = '<a role="menuitem" id="kai-sol-fab" class="nav-link kai-nav-btn" href="javascript:void(0)" tabindex="-1"><span class="sol-icon">🌞</span> Sol Academy</a>';
+            if (moreDropdown) navUl.insertBefore(solLi, moreDropdown); else navUl.appendChild(solLi);
+            document.getElementById('kai-sol-fab').addEventListener('click', openSol);
         }
 
-        document.getElementById('kai-sol-fab').addEventListener('click', openSol);
+        // Botão do Tutor (Apenas 1956)
+        if (COURSE_ID === 1956 && !document.getElementById('kai-tutor-fab')) {
+            var tutorLi = document.createElement('li');
+            tutorLi.className = 'nav-item';
+            tutorLi.setAttribute('role', 'none');
+            tutorLi.innerHTML = '<a role="menuitem" id="kai-tutor-fab" class="nav-link kai-nav-btn" href="javascript:void(0)" tabindex="-1" style="color: #000000;">🎓 Fale com o Tutor</a>';
+            if (moreDropdown) navUl.insertBefore(tutorLi, moreDropdown); else navUl.appendChild(tutorLi);
+            document.getElementById('kai-tutor-fab').addEventListener('click', window.openTutor);
+        }
+
         return true;
     }
 
     if (!injectNavItem()) {
-        var navObserver = new MutationObserver(function() {
-            if (injectNavItem()) {
-                navObserver.disconnect();
-            }
-        });
+        var navObserver = new MutationObserver(function() { if (injectNavItem()) navObserver.disconnect(); });
         navObserver.observe(document.body, { childList: true, subtree: true });
     }
 
     // =========================================================================
-    // 2. LÓGICA DA SOL ACADEMY
+    // 6. LÓGICA DE LEMBRETES E PAINEL (MANTIDA INTACTA)
     // =========================================================================
     var TOKEN = CONFIG.TOKEN;
-    var ROOT  = (window.M && M.cfg && M.cfg.wwwroot) ? M.cfg.wwwroot : window.location.origin;
     var BASE  = ROOT + '/webservice/rest/server.php';
-  
-    var WINDOW_DAYS = 7;
+    var WINDOW_DAYS = 20;
     var ABSENCE_SECONDS = 3 * 24 * 60 * 60; 
-    var DEBUG_MODE = true;
-  
-    var frases = [
-      "Você está progredindo! Cada esforço de hoje é uma conquista para seu futuro. 🌞",
-      "Seu potencial é maior do que você imagina. Continue avançando! 🌞",
-      "Cada página lida é um passo a mais em direção ao seu sonho. 🌞",
-      "Persistir é transformar pequenas vitórias em grandes conquistas. 🌞",
-      "O estudo de hoje é a liberdade de escolha de amanhã. 🌞",
-      "Você não precisa ser perfeito, só precisa continuar. 🌞",
-      "O conhecimento que você busca hoje será sua força no futuro. 🌞",
-      "Sua mente é como um músculo: quanto mais você a treina, mais forte ela fica. 🌞",
-      "O esforço de hoje constrói as oportunidades de amanhã. 🌞",
-      "Errar é parte do aprendizado, mas desistir nunca será. 🌞",
-      "Grandes conquistas começam com pequenos hábitos de estudo. 🌞",
-      "O futuro agradece o aluno dedicado que você escolhe ser hoje. 🌞",
-      "Aprender é plantar sementes que darão frutos para a vida inteira. 🌞",
-      "O conhecimento é a única riqueza que ninguém pode tirar de você. 🌞",
-      "O cansaço passa, mas o orgulho de ter conseguido fica para sempre. 🌞",
-      "Concentre-se no processo, e o resultado virá como consequência. 🌞",
-      "Cada desafio vencido mostra que você está mais preparado do que pensa. 🌞",
-      "Não compare sua jornada, cada aluno tem seu próprio ritmo. 🌞",
-      "Avançar um pouco todos os dias vale mais do que parar esperando o momento perfeito. 🌞",
-      "Você é capaz de aprender qualquer coisa, basta acreditar e praticar. 🌞",
-      "Sua determinação é a chave que abre portas que parecem fechadas. 🌞",
-      "Quando você estuda, está construindo pontes para seus sonhos. 🌞",
-      "A disciplina é o caminho mais curto entre você e seu objetivo. 🌞",
-      "Aprender é investir em si mesmo, e você é seu maior patrimônio. 🌞",
-      "Lembre-se: você não está começando do zero, mas de onde parou ontem. 🌞",
-      "Cada dúvida superada é uma vitória sobre o medo de errar. 🌞",
-      "Não desista: até o passo mais lento ainda é movimento para frente. 🌞",
-      "Cada dia de estudo é um tijolo no castelo dos seus sonhos. 🌞",
-      "Estudar é transformar esforço em poder. 🌞",
-      "Hoje pode ser difícil, mas você já está mais perto da sua vitória. 🌞",
-      "O conhecimento abre portas que a força jamais conseguiria. 🌞",
-      "Pequenos avanços diários constroem grandes resultados. 🌞",
-      "Todo especialista já foi um iniciante que não desistiu. 🌞",
-      "Estudar é acreditar que o amanhã pode ser melhor. 🌞",
-      "Seu foco define sua direção, continue firme! 🌞",
-      "A cada página estudada, um futuro mais claro se desenha. 🌞",
-      "Estudar é um ato de coragem e amor próprio. 🌞",
-      "A paciência e a disciplina sempre vencem a pressa. 🌞",
-      "Nada pode parar um aluno determinado. 🌞",
-      "Seus sonhos merecem a sua dedicação de hoje. 🌞",
-      "O esforço pode ser silencioso, mas os resultados serão barulhentos. 🌞",
-      "Grandes vitórias nascem da persistência em dias comuns. 🌞",
-      "Não estude para passar, estude para aprender. 🌞",
-      "Você já percorreu um longo caminho, siga em frente! 🌞",
-      "A chave do sucesso é começar antes de se sentir pronto. 🌞",
-      "Você é mais forte que as dificuldades que encontra. 🌞",
-      "O saber é uma chama que nunca se apaga. 🌞",
-      "Se você pode imaginar, também pode aprender. 🌞",
-      "Estudar é plantar hoje para colher amanhã. 🌞",
-      "O tempo dedicado ao aprendizado nunca é perdido. 🌞",
-      "A educação é o passaporte para o futuro. 🌞",
-      "Cada desafio enfrentado é uma prova de que você está evoluindo. 🌞",
-      "Estudar é transformar curiosidade em poder. 🌞",
-      "Você tem tudo o que precisa para conquistar o que deseja. 🌞",
-      "O hábito de estudar hoje é o sucesso de amanhã. 🌞",
-      "Quem estuda sempre encontra novos caminhos. 🌞",
-      "Seu esforço é invisível para muitos, mas essencial para você. 🌞",
-      "Estudar é acreditar no seu próprio crescimento. 🌞",
-      "Nunca subestime o poder de uma hora bem estudada. 🌞",
-      "Você está construindo um futuro brilhante, passo a passo. 🌞",
-      "Acredite no seu processo, sua dedicação está moldando o seu futuro. 🌞",
-      "Nenhum obstáculo é maior do que a sua vontade de vencer. 🌞",
-      "O conhecimento transforma desafios em oportunidades reais. 🌞",
-      "Seja a sua maior inspiração todos os dias. 🌞",
-      "Os grandes mestres de amanhã são os alunos focados de hoje. 🌞",
-      "Troque a dúvida pela ação, e veja a mágica acontecer. 🌞",
-      "Revise, respire e repita. A excelência mora na constância. 🌞",
-      "Uma hora de foco hoje poupa meses de retrabalho amanhã. 🌞",
-      "Seja gentil com seu processo de aprendizado, tudo tem seu tempo. 🌞",
-      "Sua curiosidade é a bússola para o seu desenvolvimento. 🌞",
-      "A jornada acadêmica é feita de pequenos passos consistentes. 🌞",
-      "Seu caderno hoje é o roteiro do seu sucesso amanhã. 🌞",
-      "A clareza vem com a prática. Continue estudando! 🌞",
-      "Você está construindo o conhecimento que ninguém poderá te tirar. 🌞",
-      "Cada erro corrigido é um degrau a mais rumo ao topo. 🌞",
-      "Estudar é o ato de amor mais bonito que você pode ter pelo seu futuro. 🌞",
-      "Não foque na montanha inteira, foque no próximo passo. 🌞",
-      "A motivação te faz começar, mas é a disciplina que te faz chegar lá. 🌞",
-      "Orgulhe-se do seu esforço invisível, ele trará resultados visíveis. 🌞",
-      "Sua inteligência cresce a cada desafio que você decide não ignorar. 🌞",
-      "O que parece difícil hoje será o seu aquecimento amanhã. 🌞",
-      "Transforme a ansiedade em foco e o medo em preparação. 🌞",
-      "A sala de aula é o laboratório dos seus maiores sonhos. 🌞",
-      "Um capítulo de cada vez e você terminará o livro todo. 🌞",
-      "A persistência é a ponte entre o onde você está e o onde quer chegar. 🌞",
-      "Dê o seu melhor na condição que você tem hoje. 🌞",
-      "Ninguém constrói um império da noite para o dia. Respeite sua jornada! 🌞",
-      "O estudo é a semente mais garantida que você pode plantar. 🌞",
-      "Apenas comece. O ritmo vem com a repetição. 🌞",
-      "Sua mente absorve o que o seu coração decide focar. 🌞",
-      "Faça do seu ambiente de estudo o seu templo de crescimento. 🌞",
-      "Toda matéria difícil é só uma matéria que precisa de um pouco mais de tempo. 🌞",
-      "Você é o único responsável por regar os seus sonhos diariamente. 🌞",
-      "Cada minuto dedicado aos estudos é um investimento de alto retorno. 🌞",
-      "Use as pausas para respirar, não para desistir. 🌞",
-      "A maestria é feita de inúmeras tentativas e aprendizados. 🌞",
-      "O impossível é apenas algo que ainda não foi estudado o suficiente. 🌞",
-      "O sucesso ama a preparação. Esteja pronto! 🌞",
-      "Feito é melhor que perfeito. Entregue, aprenda e evolua. 🌞",
-      "Sua força de vontade é mais poderosa que qualquer distração. 🌞",
-      "O suor do estudo hoje poupa as lágrimas da frustração amanhã. 🌞",
-      "Seja protagonista da sua própria história de aprendizado. 🌞",
-      "Cada parágrafo lido ilumina uma parte escura do desconhecido. 🌞",
-      "O conhecimento é o seu superpoder. Use sem moderação! 🌞",
-      "Celebre as pequenas vitórias: entender um conceito já é um grande passo. 🌞",
-      "Não deixe que o que você não sabe te impeça de descobrir. 🌞",
-      "Estudar não é uma obrigação, é um privilégio de crescimento. 🌞",
-      "O tempo vai passar de qualquer forma; faça com que ele conte. 🌞",
-      "Transforme a sua rotina de estudos em um hábito inquebrável. 🌞",
-      "O brilhantismo nasce na simplicidade do estudo diário. 🌞",
-      "A vida recompensa quem não foge das dificuldades. 🌞",
-      "A melhor forma de prever o seu futuro profissional é criá-lo agora. 🌞",
-      "Mantenha a mente aberta: há sempre uma nova forma de entender algo. 🌞",
-      "Toda grande caminhada começa com a decisão de dar o primeiro passo. 🌞",
-      "Sua versão do futuro está torcendo muito por você agora. 🌞",
-      "Foque na sua tela, nos seus livros e no seu progresso. 🌞",
-      "A verdadeira magia acontece fora da sua zona de conforto. 🌞",
-      "A clareza mental é alcançada após atravessar a confusão inicial. 🌞",
-      "Confie na sua capacidade de resolução de problemas. 🌞",
-      "A dor da disciplina é infinitamente menor que a dor do arrependimento. 🌞",
-      "Hoje é o dia ideal para aprender algo que você achava difícil. 🌞",
-      "O talento abre portas, mas o estudo te mantém dentro da sala. 🌞",
-      "Respeite o seu cansaço, mas honre os seus compromissos. 🌞",
-      "Encare as tarefas difíceis como treinamentos para a vida real. 🌞",
-      "Estudar com propósito muda completamente a absorção do conteúdo. 🌞",
-      "A mente que se expande por uma nova ideia jamais volta ao tamanho original. 🌞",
-      "O sacrifício de hoje é o pilar da sua estabilidade de amanhã. 🌞",
-      "Tenha fome de conhecimento e sede de evolução constante. 🌞",
-      "Se a meta é alta, os seus estudos também devem ser. 🌞",
-      "A autoconfiança cresce a cada exercício resolvido corretamente. 🌞",
-      "Seja mais teimoso do que o problema que está tentando resolver. 🌞",
-      "Você já superou coisas mais difíceis, essa matéria é só mais uma etapa! 🌞",
-      "Um aluno dedicado atrai oportunidades brilhantes. 🌞",
-      "Descanse a mente, mas nunca abandone o objetivo. 🌞",
-      "A dedicação silenciosa faz um barulho estrondoso no futuro. 🌞",
-      "Quanto mais você estuda, mais 'sorte' você parece ter. 🌞",
-      "Lembre-se do motivo pelo qual você começou antes de pensar em parar. 🌞",
-      "Sua trajetória educacional é a sua melhor assinatura. 🌞",
-      "Acredite no valor do que você está aprendendo hoje. 🌞",
-      "Continue firme. A vitória pertence a quem estuda com constância. 🌞"
-    ];
-  
+
     function mostrarFraseMotivacional(userId){
       var box = document.getElementById('kai-motivacional');
       if (!box) return; 
-  
       var uid = userId || 'visitante';
       var key = 'kai.motivacional.last.user.'+uid+'.course.'+COURSE_ID;
-      var last = parseInt(localStorage.getItem(key)||'0',10);
-      var now = Date.now();
-      
-      // TRAVA DE 2 HORAS (Deixei desligada para você ver logo que abrir)
-      // if (now - last < 2 * 60 * 60 * 1000) return;
-      
-      localStorage.setItem(key, String(now));
+      localStorage.setItem(key, String(Date.now()));
   
+      var frases = window.SOL_FRASES || ["Siga em frente, você está indo muito bem! 🌞"];
       var frase = frases[Math.floor(Math.random()*frases.length)];
   
       var div = document.createElement('div');
-      div.style.cssText = "margin:10px 0; padding:12px 16px; background:#fff7ed; color:#ea580c; border-left:4px solid #f97316; border-radius:0 8px 8px 0; font-size:14px; font-weight:500; opacity:1; transition:opacity 3s ease-out;";
+      div.style.cssText = "margin:10px 0; padding:12px 16px; background:#fff7ed; color:#1e3a8a; border-left:4px solid #1e3a8a; border-radius:0 8px 8px 0; font-size:14px; font-weight:500; opacity:1; transition:opacity 3s ease-out;";
       div.textContent = "💡 " + frase;
-      
-      box.innerHTML = '';
-      box.appendChild(div);
+      box.innerHTML = ''; box.appendChild(div);
   
       setTimeout(function(){
-        div.style.opacity = "0";
-        setTimeout(function(){ if(div.parentNode) div.parentNode.removeChild(div); }, 3000);
-      }, 10000);
+        div.style.opacity = "0"; 
+        setTimeout(function(){ 
+            if(div.parentNode) div.parentNode.removeChild(div); 
+            var sol = document.createElement('div');
+            sol.style.cssText = "font-size: 28px; text-align: center; opacity: 0; transition: opacity 2s ease-in; margin: 10px 0;";
+            sol.textContent = "🌞";
+            box.appendChild(sol);
+            setTimeout(function() { sol.style.opacity = "1"; }, 50);
+        }, 3000); 
+      }, 10000); 
     }
   
     function apiUrl(fn, params){
@@ -348,47 +290,31 @@
     }
     
     function fmtDate(ts){ var d=new Date(ts*1000), z=n=>(n<10?'0':'')+n; return z(d.getDate())+'/'+z(d.getMonth()+1)+' às '+z(d.getHours())+':'+z(d.getMinutes()); }
-    function norm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
     
     function cleanTitle(title){ 
-      return (title||'')
-        .replace(/deve estar conclu[ií]do?/i,'')
-        .replace(/entrega/i,'')
-        .replace(/está marcado\(a\) para esta data/i, '')
-        .replace(/is due/i, '')
-        .trim(); 
+      return (title||'').replace(/deve estar conclu[ií]do?/i,'').replace(/entrega/i,'').replace(/está marcado\(a\) para esta data/i, '').replace(/is due/i, '').trim(); 
     }
     
-    function linkEditSubmissionByCmid(cmid){ return ROOT + '/mod/assign/view.php?id=' + cmid + '&action=editsubmission'; }
-    function linkEditSubmissionFromURL(url){ return url + (url.includes('?') ? '&' : '?') + 'action=editsubmission'; }
     function setSub(t){ var el=document.getElementById('kai-sub'); if(el) el.textContent=t; }
   
     function resolveCurrentUser(){
       if (window.M && M.cfg && M.cfg.userid){ return Promise.resolve({ userid: parseInt(M.cfg.userid,10), fullname: String(M.cfg.fullname||'') }); }
-      var a = document.querySelector('.usermenu a[href*="/user/profile.php?id="], a[href*="/user/profile.php?id="]');
-      if (a){
-        try{
-          var u = new URL(a.href, location.origin);
-          var id = parseInt(u.searchParams.get('id')||'0',10);
-          return Promise.resolve({ userid:id, fullname:(a.textContent||'').trim() });
-        }catch(e){}
-      }
       return Promise.resolve({ userid:0, fullname:'' });
     }
   
-    function presenceKey(uid){ return 'kai.lastSeen.course.'+COURSE_ID+'.user.'+uid; }
     function showPresenceBanner(){
       var box=document.getElementById('kai-presenca'); if(!box) return;
       var banner=document.createElement('div');
       banner.style.cssText="padding:8px 12px;border:1px solid #f59e0b;border-radius:12px;color:#92400e;background:#fffbeb;font-size:13px;line-height:1.25;opacity:1;transition:opacity 7s ease-out;";
-      banner.innerHTML='<span>⏳</span> Olá aluno(a), notei que você não acessa a plataforma há algum tempo. Vamos retomar? — Sou a <b>Sol</b>, sua Tutora 🌞';
+      banner.innerHTML='<span>⏳</span> Senti sua falta! Vamos retomar? — <b>Sol</b> 🌞';
       box.innerHTML=''; box.appendChild(banner);
       setTimeout(function(){ banner.style.opacity="0"; setTimeout(function(){ banner.remove(); },7000); },10000);
     }
+
     function presenceFlowForCurrentUser(){
       resolveCurrentUser().then(function(info){
         var uid = info.userid; if(!uid) return;
-        var key = presenceKey(uid), now = Math.floor(Date.now()/1000), last = parseInt(localStorage.getItem(key)||'0',10);
+        var key = 'kai.lastSeen.course.'+COURSE_ID+'.user.'+uid, now = Math.floor(Date.now()/1000), last = parseInt(localStorage.getItem(key)||'0',10);
         if(last && (now-last)>=ABSENCE_SECONDS) showPresenceBanner();
         localStorage.setItem(key, String(now));
       });
@@ -399,165 +325,73 @@
       var u = it && (it.link||it.url); if(!u) return null;
       try{ var id=new URL(u, ROOT).searchParams.get('id'); return id?Number(id):null; }catch(e){ return null; }
     }
-    
-    function dedupeByCmid(list){
-      var seen = new Set();
-      return list.filter(function(it){
-        var cmid = resolveCmid(it);
-        if (!cmid) return true;
-        if (seen.has(cmid)) return false;
-        seen.add(cmid); return true;
-      });
-    }
-    
-    function guessCmidFromName(evName, nameToCmid){
-      var n = norm(String(evName));
-      if (nameToCmid[n]) return nameToCmid[n];
-      var best=null, keys=Object.keys(nameToCmid);
-      for (var i=0;i<keys.length;i++){ var k=keys[i]; if(n.indexOf(k)>=0){ if(!best || k.length>best.len) best={id:nameToCmid[k], len:k.length}; } }
-      return best?best.id:null;
-    }
   
     function renderItem(it){
-      var left = it.link ? '<a href="'+it.link+'" target="_blank" rel="noopener" style="color: #ea580c; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
-                         : (it.url  ? '<a href="'+it.url+'" target="_blank" rel="noopener" style="color: #ea580c; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
+      var left = it.link ? '<a href="'+it.link+'" target="_blank" rel="noopener" style="color: #1e3a8a; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
+                         : (it.url  ? '<a href="'+it.url+'" target="_blank" rel="noopener" style="color: #1e3a8a; font-weight: 600; text-decoration: none;">'+cleanTitle(it.title)+'</a>'
                                     : cleanTitle(it.title));
-      return '<div style="margin:8px 0; padding:12px; border-left:4px solid #f97316; background:#f8fafc; border-radius:0 8px 8px 0; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">'
-           +   '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'
-           +     left
-           +   '</div>'
+      return '<div style="margin:10px 0; padding:12px 16px; background:#fff7ed; border-left:4px solid #1e3a8a; border-radius:0 8px 8px 0; display:flex; justify-content:space-between; align-items:center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">'
+           +   '<div style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; font-size:14px;">' + left + '</div>'
            +   '<span style="color:#64748b;font-size:12px;flex-shrink:0; background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-weight: 500;">Até '+it.when+'</span>'
            + '</div>';
     }
   
     function loadReminders(){
-      if (!TOKEN) {
-          setSub('Erro: Sem autorização para buscar tarefas.');
-          return;
-      }
+      if (!TOKEN) { setSub('Erro: Sem autorização.'); return; }
 
       var now = Math.floor(Date.now()/1000);
-      var in7 = now + WINDOW_DAYS*24*60*60;
-  
-      var urlAssign   = apiUrl('mod_assign_get_assignments', {'courseids[0]': COURSE_ID});
-      var urlCal      = apiUrl('core_calendar_get_calendar_events', {'events[courseids][0]': COURSE_ID, 'options[timestart]': now, 'options[timeend]': in7});
-      var urlContents = apiUrl('core_course_get_contents', {courseid: COURSE_ID});
+      var inWindow = now + WINDOW_DAYS*24*60*60;
+      var urlCal = apiUrl('core_calendar_get_calendar_events', {'events[courseids][0]': COURSE_ID, 'options[timestart]': now, 'options[timeend]': inWindow});
   
       resolveCurrentUser().then(async function(info){
         var userId = info.userid || 0;
-  
-        var [a, c, contents] = await Promise.all([
-          fetch(urlAssign).then(r=>r.json()).catch(()=>({})),
-          fetch(urlCal).then(r=>r.json()).catch(()=>({})),
-          fetch(urlContents).then(r=>r.json()).catch(()=>([]))
-        ]);
-  
-        var tasks=[], events=[];
-        var nameToCmid={};
-  
-        try{
-          (contents||[]).forEach(sec=>{
-            (sec.modules||[]).forEach(mod=>{
-              if(mod.modname==='assign'){ nameToCmid[norm(mod.name)] = mod.id; }
-            });
-          });
-        }catch(e){}
-  
-        try{
-          var courses = Array.isArray(a.courses) ? a.courses : [];
-          var courseBlock = courses.find(cc=>Number(cc.id)===Number(COURSE_ID)) || courses[0];
-          var assigns = (courseBlock && Array.isArray(courseBlock.assignments)) ? courseBlock.assignments : [];
-          for (var i=0;i<assigns.length;i++){
-            var asg = assigns[i], due = parseInt(asg.duedate||0,10);
-            if (due >= now && due <= in7){
-              tasks.push({
-                type:'assign', cmid: asg.cmid||null, url: asg.url||null,
-                title: asg.name||'Tarefa', when: fmtDate(due), ts: due,
-                link: asg.cmid ? linkEditSubmissionByCmid(asg.cmid)
-                               : (asg.url && /\/mod\/assign\//.test(asg.url) ? linkEditSubmissionFromURL(asg.url) : null)
-              });
-            }
-          }
-        }catch(e){}
+        let c; try { c = await fetch(urlCal).then(r=>r.json()); } catch(e) { c = {}; }
+        var events = [];
   
         try{
           var evs = (c && c.events) ? c.events : [];
-          for (var j=0;j<evs.length;j++){
+          for (var j=0; j<evs.length; j++){
             var ev = evs[j], ts = parseInt(ev.timestart||0,10);
-            if (ts < now || ts > in7) continue;
-  
-            var title = ev.name || 'Evento';
-            var cmid  = Number.isInteger(ev.cmid) ? ev.cmid : guessCmidFromName(title, nameToCmid);
-            var link  = ev.url && /\/mod\/assign\//.test(ev.url)
-                          ? linkEditSubmissionFromURL(ev.url)
-                          : (cmid ? linkEditSubmissionByCmid(cmid)
-                                  : ROOT + '/mod/assign/index.php?id=' + COURSE_ID);
-  
-            events.push({ type:'event', title, when:fmtDate(ts), ts, url: ev.url||null, cmid, link });
+            if (ts < now || ts > inWindow) continue;
+            var title = ev.name || 'Atividade';
+            var cmid = ev.cmid;
+            if (!cmid && ev.coursemodule) cmid = (typeof ev.coursemodule === 'object') ? ev.coursemodule.id : ev.coursemodule;
+            var link = ev.url;
+            if (!link && ev.action && ev.action.url) link = ev.action.url; 
+            if (!link && cmid && ev.modulename) link = ROOT + '/mod/' + ev.modulename + '/view.php?id=' + cmid;
+            if (!link) link = ROOT + '/course/view.php?id=' + COURSE_ID;
+            if (ev.modulename === 'assign' && link && !link.includes('action=editsubmission')) link = link + (link.includes('?') ? '&' : '?') + 'action=editsubmission';
+            events.push({ type:'event', title, when:fmtDate(ts), ts, url: link, cmid, link });
           }
         }catch(e){}
-  
-        tasks  = dedupeByCmid(tasks);
-        events = dedupeByCmid(events);
-
-        var taskCmids = new Set(tasks.map(t => resolveCmid(t)).filter(id => id));
-        var taskNames = new Set(tasks.map(t => norm(cleanTitle(t.title))));
-        
-        events = events.filter(function(ev){
-            var evCmid = resolveCmid(ev);
-            if (evCmid && taskCmids.has(evCmid)) return false;
-            if (taskNames.has(norm(cleanTitle(ev.title)))) return false;
-            return true;
-        });
   
         if (userId){
           try{
             var comp = await fetch(apiUrl('core_completion_get_activities_completion_status', { courseid: COURSE_ID, userid: userId })).then(r=>r.json());
             var completed = new Set((comp.statuses||[]).filter(s=>s && s.state==1 && Number.isInteger(s.cmid)).map(s=>s.cmid));
-  
-            function hideIfCompletedFactory(){
-              return function(it){
-                var cmid = resolveCmid(it);
-                if (!cmid) return true;
-                if (completed.has(cmid)) return false;
-                return true;
-              };
-            }
-  
-            tasks  = tasks.filter(hideIfCompletedFactory());
-            events = events.filter(hideIfCompletedFactory());
-          }catch(e){ if (DEBUG_MODE) console.warn('Falha ao ler conclusões', e); }
+            events = events.filter(it => { var cmid = resolveCmid(it); return !(cmid && completed.has(cmid)); });
+          }catch(e){}
         }
-  
-        tasks.sort((x,y)=>x.ts-y.ts);
+        
         events.sort((x,y)=>x.ts-y.ts);
-  
+        
         var listTasks  = document.getElementById('kai-tasks');
         var listEvents = document.getElementById('kai-events');
-  
-        if (!tasks.length && !events.length){
-          setSub('Nenhuma pendência para os próximos 7 dias. Ótimo trabalho!');
-          listTasks.innerHTML=''; listEvents.innerHTML='';
-          mostrarFraseMotivacional(userId);
-          return;
+        
+        if (!events.length){ 
+            setSub('Nenhuma pendência para os próximos ' + WINDOW_DAYS + ' dias. Ótimo trabalho!'); 
+            listTasks.innerHTML=''; listEvents.innerHTML=''; 
+            mostrarFraseMotivacional(userId); 
+            return; 
         }
-  
-        var totalPendencias = tasks.length + events.length;
-        var textoSub = totalPendencias === 1 ? '1 atividade pendente:' : totalPendencias + ' atividades pendentes:';
-        setSub(textoSub);
-
-        mostrarFraseMotivacional(userId);
-  
-        listTasks.innerHTML  = tasks.length  ? '<h4 style="margin-top:16px; color:#333; font-size:16px;">📖 Tarefas</h4>'+tasks.map(renderItem).join('')  : '';
-        listEvents.innerHTML = events.length ? '<h4 style="margin-top:16px; color:#333; font-size:16px;">📅 Eventos</h4>'+events.map(renderItem).join('') : '';
-      })
-      .catch(function(err){
-        if (DEBUG_MODE) console.error('[DEBUG] Falha no loadReminders', err);
-        setSub('Erro ao carregar os lembretes.');
-      });
+        
+        var totalPendencias = events.length;
+        setSub(totalPendencias === 1 ? '1 atividade pendente:' : totalPendencias + ' atividades pendentes:');
+        mostrarFraseMotivacional(userId); 
+        listTasks.innerHTML  = '';
+        listEvents.innerHTML = '<h4 style="margin-top:16px; color:#333; font-size:16px;">📖 Próximas Entregas</h4>'+events.map(renderItem).join('');
+      }).catch(function(err){ setSub('Erro ao carregar os lembretes.'); });
     }
   
-    // Inicia verificação de presença em background
     presenceFlowForCurrentUser();
-    
 })();

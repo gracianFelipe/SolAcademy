@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sol Academy — Apresentação Institucional</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #1e293b;
+    overflow-x: hidden;
+  }
+
+  .progress {
+    position: fixed;
+    top: 0; left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #f97316 0%, #fbbf24 100%);
+    z-index: 9999;
+    width: 0%;
+    transition: width 0.1s ease;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+  }
+
+  section {
+    min-height: 100vh;
+    width: 100%;
+    padding: 80px 8vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+  .reveal-left {
+    opacity: 0;
+    transform: translateX(-60px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal-left.in-view { opacity: 1; transform: translateX(0); }
+
+  .reveal-right {
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal-right.in-view { opacity: 1; transform: translateX(0); }
+
+  .reveal-scale {
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal-scale.in-view { opacity: 1; transform: scale(1); }
+
+  .stagger.in-view > *:nth-child(1) { transition-delay: 0.1s; }
+  .stagger.in-view > *:nth-child(2) { transition-delay: 0.25s; }
+  .stagger.in-view > *:nth-child(3) { transition-delay: 0.4s; }
+  .stagger.in-view > *:nth-child(4) { transition-delay: 0.55s; }
+  .stagger.in-view > *:nth-child(5) { transition-delay: 0.7s; }
+  .stagger.in-view > *:nth-child(6) { transition-delay: 0.85s; }
+
+  h1 {
+    font-size: clamp(48px, 7vw, 96px);
+    font-weight: 800;
+    line-height: 1.05;
+    color: #1e3a8a;
+    letter-spacing: -2px;
+  }
+  h2 {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #1e3a8a;
+    margin-bottom: 30px;
+    letter-spacing: -1px;
+  }
+  h3 {
+    font-size: clamp(20px, 1.8vw, 26px);
+    font-weight: 700;
+    color: #1e3a8a;
+    margin-bottom: 10px;
+  }
+  p, li {
+    font-size: clamp(18px, 1.5vw, 22px);
+    line-height: 1.6;
+    color: #475569;
+  }
+  .lead {
+    font-size: clamp(22px, 2vw, 30px);
+    color: #334155;
+    max-width: 900px;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .badge {
+    display: inline-block;
+    background: #1e3a8a;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+    width: fit-content;
+    text-transform: uppercase;
+  }
+
+  .highlight { color: #ea580c; font-weight: 700; }
+
+  .hero {
+    background: radial-gradient(ellipse at top, #1e3a8a 0%, #0f172a 70%);
+    color: #fff;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    min-height: 100vh;
+    position: relative;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.3) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .hero h1 { color: #fff; font-size: clamp(64px, 10vw, 130px); position: relative; }
+  .hero .sun {
+    font-size: clamp(100px, 14vw, 180px);
+    animation: pulse 3.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 40px rgba(251, 191, 36, 0.7));
+    margin-bottom: 20px;
+    position: relative;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.6)); }
+    50% { transform: scale(1.1); filter: drop-shadow(0 0 70px rgba(251, 191, 36, 1)); }
+  }
+  .hero .sub {
+    font-size: clamp(20px, 2.2vw, 32px);
+    margin-top: 20px;
+    color: #fde68a;
+    font-weight: 300;
+    position: relative;
+  }
+  .hero .scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    opacity: 0.7;
+    font-size: 14px;
+    letter-spacing: 3px;
+    animation: bounce 2s ease-in-out infinite;
+  }
+  .hero .scroll-hint .arrow { font-size: 24px; display: block; margin-top: 8px; }
+  @keyframes bounce {
+    0%, 100% { transform: translate(-50%, 0); opacity: 0.6; }
+    50% { transform: translate(-50%, 10px); opacity: 1; }
+  }
+
+  .light {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 50%, #fef3c7 100%);
+  }
+  .gray {
+    background: #f8fafc;
+  }
+  .dark {
+    background: linear-gradient(135deg, #1e3a8a 0%, #312e81 100%);
+    color: #fff;
+  }
+  .dark h2, .dark h3 { color: #fff; }
+  .dark p { color: #cbd5e1; }
+  .dark .lead { color: #e2e8f0; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 40px;
+  }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) {
+    .grid, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px;
+    border-left: 6px solid #f97316;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+  .card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+  }
+  .card .icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+  }
+  .card p { font-size: 18px; line-height: 1.5; }
+
+  .dark .card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    border-left-color: #fbbf24;
+  }
+  .dark .card p { color: #e2e8f0; }
+
+  .quote {
+    background: #fff7ed;
+    border-left: 6px solid #f97316;
+    padding: 28px 36px;
+    border-radius: 0 16px 16px 0;
+    font-style: italic;
+    color: #9a3412;
+    font-size: clamp(20px, 1.7vw, 26px);
+    max-width: 1000px;
+    margin-top: 24px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+    line-height: 1.5;
+  }
+  .quote.blue {
+    background: #eff6ff;
+    border-color: #1e3a8a;
+    color: #1e3a8a;
+  }
+  .quote.warning {
+    background: #fffbeb;
+    border-color: #f59e0b;
+    color: #92400e;
+  }
+
+  ul.clean { list-style: none; margin-top: 30px; }
+  ul.clean li {
+    padding: 16px 0 16px 50px;
+    position: relative;
+    font-size: clamp(20px, 1.6vw, 24px);
+    border-bottom: 1px solid #e2e8f0;
+  }
+  ul.clean li:last-child { border-bottom: none; }
+  ul.clean li::before {
+    content: "🌞";
+    position: absolute;
+    left: 0;
+    top: 14px;
+    font-size: 24px;
+  }
+
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-top: 50px;
+  }
+  @media (max-width: 900px) {
+    .timeline { grid-template-columns: 1fr; }
+  }
+  .step {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px 24px 24px;
+    border-top: 6px solid #1e3a8a;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+    position: relative;
+    transition: transform 0.4s ease;
+  }
+  .step:hover { transform: translateY(-6px); }
+  .step .num-circle {
+    position: absolute;
+    top: -24px;
+    left: 24px;
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    color: #fff;
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 22px;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
+  }
+  .step h3 { font-size: 22px; margin-top: 16px; margin-bottom: 10px; }
+  .step p { font-size: 17px; }
+
+  .final {
+    background: linear-gradient(135deg, #1e3a8a 0%, #312e81 40%, #ea580c 100%);
+    color: #fff;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+  }
+  .final h2 { color: #fff; font-size: clamp(48px, 7vw, 88px); }
+  .final p { color: #fef3c7; font-size: clamp(22px, 2vw, 30px); max-width: 900px; margin-top: 24px; line-height: 1.5; }
+  .final .sun {
+    font-size: clamp(80px, 12vw, 140px);
+    animation: pulse 3.5s ease-in-out infinite;
+    margin-bottom: 30px;
+    filter: drop-shadow(0 0 50px rgba(251, 191, 36, 0.8));
+  }
+  .final .signature {
+    margin-top: 60px;
+    font-size: 14px;
+    letter-spacing: 4px;
+    opacity: 0.8;
+  }
+
+  .deco-sun {
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.08;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .deco-sun.top-right { top: 40px; right: -40px; transform: rotate(15deg); }
+  .deco-sun.bottom-left { bottom: 40px; left: -40px; transform: rotate(-15deg); }
+
+  section > * { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<section class="hero">
+  <div class="sun reveal-scale">🌞</div>
+  <h1 class="reveal">Sol Academy</h1>
+  <div class="sub reveal">A tutora virtual que caminha junto com o aluno</div>
+  <div class="scroll-hint">
+    DESÇA PARA CONHECER
+    <span class="arrow">↓</span>
+  </div>
+</section>
+
+<section class="light">
+  <span class="deco-sun top-right">🌞</span>
+  <span class="badge reveal">Quem é a Sol</span>
+  <h2 class="reveal">Uma tutora sempre disponível</h2>
+  <p class="lead reveal-left">
+    A <span class="highlight">Sol</span> é uma tutora virtual integrada ao ambiente de aprendizagem da faculdade.
+    Ela acompanha cada aluno de forma personalizada, lembra prazos, motiva, tira dúvidas e
+    garante que ninguém fique para trás na jornada acadêmica.
+  </p>
+  <div class="quote reveal-right">
+    "Olá aluno(a), notei que você não acessa a plataforma há algum tempo. Vamos retomar?
+    — Sou a Sol, sua Tutora 🌞"
+  </div>
+</section>
+
+<section class="gray">
+  <span class="badge reveal">Como funciona</span>
+  <h2 class="reveal">Sempre ao alcance de um clique</h2>
+  <p class="lead reveal">
+    Ao entrar na sala de aula virtual, o aluno encontra a Sol no menu principal,
+    identificada por um <span class="highlight">ícone de sol brilhante</span>.
+    Basta um clique para que ela apresente um painel completo de acompanhamento.
+  </p>
+  <div class="grid grid-3 stagger">
+    <div class="card reveal">
+      <span class="icon">📅</span>
+      <h3>Lembretes</h3>
+      <p>Tarefas e eventos dos próximos 7 dias, organizados por data de entrega.</p>
+    </div>
+    <div class="card reveal">
+      <span class="icon">💬</span>
+      <h3>Conversa</h3>
+      <p>Espaço para o aluno tirar dúvidas e dialogar com a tutora a qualquer hora.</p>
+    </div>
+    <div class="card reveal">
+      <span class="icon">💡</span>
+      <h3>Motivação</h3>
+      <p>Mensagens de incentivo personalizadas para fortalecer o engajamento.</p>
+    </div>
+  </div>
+</section>
+
+<section class="light">
+  <span class="badge reveal">Funcionalidade 1</span>
+  <h2 class="reveal">Lembretes da semana</h2>
+  <p class="lead reveal-left">
+    A Sol identifica automaticamente o que o aluno precisa entregar e organiza tudo
+    em um painel claro e visual.
+  </p>
+  <ul class="clean stagger">
+    <li class="reveal">Mostra <b>tarefas pendentes</b> com data e horário de entrega</li>
+    <li class="reveal">Apresenta <b>eventos importantes</b> da sala virtual</li>
+    <li class="reveal"><b>Esconde automaticamente</b> o que o aluno já concluiu</li>
+    <li class="reveal">Cada atividade é um <b>atalho direto</b> para começar a fazer</li>
+    <li class="reveal">Evita repetição: uma mesma atividade nunca aparece duas vezes</li>
+  </ul>
+</section>
+
+<section class="dark">
+  <span class="deco-sun bottom-left">🌞</span>
+  <span class="badge reveal" style="background: #f97316;">Funcionalidade 2</span>
+  <h2 class="reveal">Conversa com a Sol</h2>
+  <p class="lead reveal">
+    Dentro do próprio painel, o aluno encontra um espaço de diálogo onde pode
+    <span class="highlight" style="color: #fbbf24;">conversar com a tutora</span>, tirar dúvidas sobre o conteúdo
+    e receber orientações de estudo.
+  </p>
+  <div class="grid stagger">
+    <div class="card reveal-left">
+      <span class="icon">🕐</span>
+      <h3>Disponível 24 horas</h3>
+      <p>Apoio em qualquer momento, inclusive nos horários em que o aluno realmente estuda — à noite e nos fins de semana.</p>
+    </div>
+    <div class="card reveal-right">
+      <span class="icon">🎯</span>
+      <h3>Apoio individual</h3>
+      <p>Atendimento personalizado, no ritmo de cada aluno, sem filas e sem espera.</p>
+    </div>
+  </div>
+</section>
+
+<section class="light">
+  <span class="badge reveal">Funcionalidade 3</span>
+  <h2 class="reveal">Mensagens que inspiram</h2>
+  <p class="lead reveal-left">
+    A cada acesso, a Sol entrega uma <span class="highlight">mensagem motivacional</span>
+    cuidadosamente escolhida em uma biblioteca de mais de <b>130 frases</b> sobre estudo,
+    persistência e crescimento pessoal.
+  </p>
+  <div class="stagger" style="margin-top: 30px;">
+    <div class="quote reveal-left">💡 "O estudo de hoje é a liberdade de escolha de amanhã. 🌞"</div>
+    <div class="quote blue reveal-right">💡 "Não foque na montanha inteira, foque no próximo passo. 🌞"</div>
+    <div class="quote reveal-left">💡 "Você não está começando do zero, mas de onde parou ontem. 🌞"</div>
+  </div>
+</section>
+
+<section class="gray">
+  <span class="badge reveal">Funcionalidade 4</span>
+  <h2 class="reveal">Ninguém fica para trás</h2>
+  <p class="lead reveal-left">
+    Se o aluno passa mais de <span class="highlight">três dias sem acessar</span> a plataforma,
+    a Sol percebe e oferece um acolhimento ao seu retorno.
+  </p>
+  <div class="quote warning reveal-right">
+    ⏳ "Olá aluno(a), notei que você não acessa a plataforma há algum tempo.
+    Vamos retomar? — Sou a Sol, sua Tutora 🌞"
+  </div>
+  <p class="reveal" style="margin-top: 30px; max-width: 900px;">
+    Esse acolhimento humanizado <b>reduz a evasão</b> e mostra ao aluno que a faculdade
+    está atenta à sua jornada, do início ao fim.
+  </p>
+</section>
+
+<section class="dark">
+  <span class="badge reveal" style="background: #f97316;">A jornada</span>
+  <h2 class="reveal">A experiência do aluno</h2>
+  <div class="timeline stagger">
+    <div class="step reveal">
+      <div class="num-circle">1</div>
+      <h3>Entrada</h3>
+      <p>O aluno acessa a sala virtual e vê a Sol esperando por ele no menu.</p>
+    </div>
+    <div class="step reveal">
+      <div class="num-circle">2</div>
+      <h3>Acolhimento</h3>
+      <p>Ao abrir, recebe uma mensagem motivacional personalizada.</p>
+    </div>
+    <div class="step reveal">
+      <div class="num-circle">3</div>
+      <h3>Orientação</h3>
+      <p>Visualiza tarefas e eventos da semana já organizados.</p>
+    </div>
+    <div class="step reveal">
+      <div class="num-circle">4</div>
+      <h3>Diálogo</h3>
+      <p>Conversa com a Sol para esclarecer dúvidas e seguir em frente.</p>
+    </div>
+  </div>
+</section>
+
+<section class="light">
+  <span class="badge reveal">Resultados</span>
+  <h2 class="reveal">O que a Sol entrega</h2>
+  <div class="grid stagger">
+    <div class="card reveal-left">
+      <span class="icon">🎓</span>
+      <h3>Para o aluno</h3>
+      <p>Acompanhamento contínuo, mais organização, mais motivação e menos esquecimento de prazos.</p>
+    </div>
+    <div class="card reveal-right">
+      <span class="icon">👨‍🏫</span>
+      <h3>Para o professor</h3>
+      <p>Alunos mais engajados e melhor preparados, com mais entregas dentro do prazo.</p>
+    </div>
+    <div class="card reveal-left">
+      <span class="icon">🏛️</span>
+      <h3>Para a instituição</h3>
+      <p>Redução da evasão, fortalecimento do vínculo aluno-faculdade e diferencial competitivo.</p>
+    </div>
+    <div class="card reveal-right">
+      <span class="icon">💛</span>
+      <h3>Para a educação</h3>
+      <p>Ensino mais humano, mais acessível e mais próximo de cada estudante.</p>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="sun reveal-scale">🌞</div>
+  <h2 class="reveal">Sol Academy</h2>
+  <p class="reveal">
+    Uma tutora que acolhe, organiza e inspira.<br>
+    Porque cada aluno merece um sol iluminando o seu caminho.
+  </p>
+  <div class="signature reveal">OBRIGADO</div>
+</section>
+
+<script>
+  const progressBar = document.getElementById('progress');
+  window.addEventListener('scroll', () => {
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    const current = window.scrollY;
+    const pct = (current / total) * 100;
+    progressBar.style.width = pct + '%';
+  });
+
+  const revealEls = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale, .stagger');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+      } else {
+        if (entry.boundingClientRect.top > window.innerHeight) {
+          entry.target.classList.remove('in-view');
+        }
+      }
+    });
+  }, {
+    threshold: 0.15,
+    rootMargin: '0px 0px -80px 0px'
+  });
+
+  revealEls.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>

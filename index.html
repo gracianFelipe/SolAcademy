@@ -190,6 +190,59 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
+
+  /* Wrapper positioning transitions between hero / floating / landed */
+  .sun-svg-wrapper {
+    transition: top 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                right 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                left 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                width 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+                height 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sun-svg-wrapper.floating {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    left: auto;
+    width: 96px;
+    height: 96px;
+    margin: 0;
+    z-index: 9000;
+    animation: pulse-mini 4s ease-in-out infinite;
+  }
+  .sun-svg-wrapper.floating .sun-svg .rays { animation: none; }
+  .sun-svg-wrapper.landed {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    width: clamp(160px, 18vw, 240px);
+    height: clamp(160px, 18vw, 240px);
+    margin: 0;
+    z-index: 100;
+    transform: translate(-50%, -50%);
+    animation: pulse 3.5s ease-in-out infinite;
+  }
+  .sun-svg-wrapper.landed.reveal-scale.in-view { transform: translate(-50%, -50%); }
+  @keyframes pulse-mini {
+    0%, 100% { filter: drop-shadow(0 5px 14px rgba(0,0,0,0.25)) drop-shadow(0 0 8px rgba(251, 191, 36, 0.4)); }
+    50% { filter: drop-shadow(0 8px 22px rgba(0,0,0,0.3)) drop-shadow(0 0 22px rgba(251, 191, 36, 0.8)); }
+  }
+  body.sun-landed .final .sun { display: none; }
+
+  /* Expressões da Sol baseadas no que o usuário lê */
+  .sun-svg { transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); transform-origin: center; }
+  .sun-svg.extra-happy { transform: scale(1.08); }
+  .sun-svg.awake.extra-happy .eyes-open { opacity: 0; transition: opacity 0.3s ease-in-out; }
+  .sun-svg.awake.extra-happy .eyes-closed { opacity: 1; transition: opacity 0.3s ease-in-out; }
+  .sun-svg.extra-happy .mouth-closed { opacity: 0; transition: opacity 0.22s ease; }
+  .sun-svg.extra-happy .mouth-open { opacity: 1; transition: opacity 0.22s ease; }
+  .sun-svg.agreeing { animation: thoughtful-nod 1.6s ease-in-out infinite; }
+  @keyframes thoughtful-nod {
+    0%, 100% { transform: translateY(0) scale(1); }
+    35% { transform: translateY(7px) scale(1); }
+    65% { transform: translateY(7px) scale(1); }
+  }
   @keyframes pulse {
     0%, 100% { transform: scale(1); filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.6)); }
     50% { transform: scale(1.1); filter: drop-shadow(0 0 70px rgba(251, 191, 36, 1)); }
@@ -755,9 +808,54 @@
     setInterval(() => {
       if (heroSun.classList.contains('awake') && !document.hidden) {
         heroSun.classList.add('blinking');
-        setTimeout(() => heroSun.classList.remove('blinking'), 180);
+        setTimeout(() => heroSun.classList.remove('blinking'), 320);
       }
-    }, 4800);
+    }, 5200);
+
+    // Posicionamento dinâmico: hero -> floating -> landed conforme o scroll
+    const wrapper = heroSun.parentElement;
+    const finalSection = document.querySelector('section.final');
+
+    function updateSunPosition() {
+      if (!finalSection) return;
+      const finalRect = finalSection.getBoundingClientRect();
+      const inFinal = finalRect.top < window.innerHeight * 0.45;
+      const startedScrolling = window.scrollY > 120;
+
+      if (inFinal) {
+        wrapper.classList.add('landed');
+        wrapper.classList.remove('floating');
+        document.body.classList.add('sun-landed');
+      } else if (startedScrolling) {
+        wrapper.classList.add('floating');
+        wrapper.classList.remove('landed');
+        document.body.classList.remove('sun-landed');
+      } else {
+        wrapper.classList.remove('floating', 'landed');
+        document.body.classList.remove('sun-landed');
+      }
+    }
+    window.addEventListener('scroll', updateSunPosition, { passive: true });
+    window.addEventListener('resize', updateSunPosition, { passive: true });
+    updateSunPosition();
+
+    // Estados de expressão: a Sol "lê junto" com o aluno
+    function setSunMood(mood) {
+      heroSun.classList.remove('agreeing', 'extra-happy');
+      if (mood) heroSun.classList.add(mood);
+    }
+
+    // Cards informativos, etapas e itens de lista: concordar / acompanhar
+    document.querySelectorAll('.card, .step, ul.clean li').forEach(el => {
+      el.addEventListener('mouseenter', () => setSunMood('agreeing'));
+      el.addEventListener('mouseleave', () => setSunMood(null));
+    });
+
+    // Frases inspiradoras e mensagens motivacionais: gargalhada / muito feliz
+    document.querySelectorAll('.quote').forEach(el => {
+      el.addEventListener('mouseenter', () => setSunMood('extra-happy'));
+      el.addEventListener('mouseleave', () => setSunMood(null));
+    });
   }
 </script>
 

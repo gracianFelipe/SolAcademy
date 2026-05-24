@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Sol Academy — Apresentação MEC</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #0f172a; }
+
+  .deck { position: relative; width: 100vw; height: 100vh; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 60px 80px;
+    color: #1e293b;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 60%, #fef3c7 100%);
+    animation: fade 0.5s ease;
+  }
+  .slide.active { display: flex; }
+
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .badge {
+    display: inline-block;
+    background: #1e3a8a;
+    color: #fff;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    width: fit-content;
+  }
+
+  h1 {
+    font-size: 72px;
+    font-weight: 700;
+    color: #1e3a8a;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  h2 {
+    font-size: 52px;
+    font-weight: 700;
+    color: #1e3a8a;
+    line-height: 1.15;
+    margin-bottom: 30px;
+  }
+  h3 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-bottom: 12px;
+  }
+  p, li {
+    font-size: 24px;
+    line-height: 1.5;
+    color: #334155;
+  }
+  .lead {
+    font-size: 32px;
+    color: #475569;
+    max-width: 1100px;
+    line-height: 1.4;
+  }
+
+  .cover {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 50%, #ea580c 100%);
+    color: #fff;
+  }
+  .cover .sun {
+    font-size: 140px;
+    animation: pulse 3s ease-in-out infinite;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 30px rgba(251, 191, 36, 0.6));
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.5)); }
+    50% { transform: scale(1.08); filter: drop-shadow(0 0 50px rgba(251, 191, 36, 0.9)); }
+  }
+  .cover h1 { color: #fff; font-size: 90px; }
+  .cover .sub { font-size: 32px; opacity: 0.95; margin-top: 16px; font-weight: 300; }
+  .cover .institution { margin-top: 60px; font-size: 20px; opacity: 0.85; letter-spacing: 2px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 30px;
+  }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px;
+    border-left: 6px solid #f97316;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .card .icon { font-size: 40px; margin-bottom: 12px; display: block; }
+  .card h3 { font-size: 24px; margin-bottom: 8px; }
+  .card p { font-size: 19px; color: #475569; }
+
+  .quote {
+    background: #fff7ed;
+    border-left: 6px solid #f97316;
+    padding: 24px 32px;
+    border-radius: 0 12px 12px 0;
+    font-style: italic;
+    color: #9a3412;
+    font-size: 26px;
+    max-width: 1000px;
+    margin-top: 30px;
+  }
+
+  ul.clean { list-style: none; }
+  ul.clean li {
+    padding: 14px 0 14px 40px;
+    position: relative;
+    font-size: 24px;
+  }
+  ul.clean li::before {
+    content: "🌞";
+    position: absolute;
+    left: 0;
+    top: 12px;
+    font-size: 22px;
+  }
+
+  .nav {
+    position: fixed;
+    bottom: 20px; right: 30px;
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(30, 58, 138, 0.9);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 14px;
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+  .nav button {
+    background: #f97316; border: none; color: #fff;
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: 16px; font-weight: bold;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav button:hover { background: #ea580c; }
+  .counter { min-width: 50px; text-align: center; font-weight: 600; }
+
+  .footer {
+    position: absolute;
+    bottom: 25px; left: 80px;
+    color: #94a3b8;
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .highlight { color: #ea580c; font-weight: 700; }
+
+  .stats {
+    display: flex;
+    gap: 50px;
+    margin-top: 40px;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat .num {
+    font-size: 80px;
+    font-weight: 700;
+    color: #f97316;
+    line-height: 1;
+  }
+  .stat .label {
+    font-size: 20px;
+    color: #475569;
+    margin-top: 8px;
+  }
+
+  .timeline {
+    display: flex;
+    gap: 20px;
+    margin-top: 40px;
+    align-items: stretch;
+  }
+  .step {
+    flex: 1;
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    border-top: 6px solid #1e3a8a;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    position: relative;
+  }
+  .step .num-circle {
+    position: absolute;
+    top: -20px; left: 24px;
+    background: #f97316;
+    color: #fff;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 20px;
+  }
+  .step h3 { font-size: 20px; margin-top: 12px; margin-bottom: 8px; }
+  .step p { font-size: 17px; }
+
+  .final {
+    background: linear-gradient(135deg, #1e3a8a 0%, #ea580c 100%);
+    color: #fff;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .final h2 { color: #fff; font-size: 64px; }
+  .final p { color: #fef3c7; font-size: 28px; max-width: 900px; margin-top: 20px; }
+  .final .sun { font-size: 100px; animation: pulse 3s ease-in-out infinite; margin-bottom: 30px; }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- SLIDE 1: CAPA -->
+  <section class="slide cover active">
+    <div class="sun">🌞</div>
+    <h1>Sol Academy</h1>
+    <div class="sub">A tutora virtual que caminha junto com o aluno</div>
+    <div class="institution">APRESENTAÇÃO INSTITUCIONAL · 2026</div>
+  </section>
+
+  <!-- SLIDE 2: O QUE É -->
+  <section class="slide">
+    <span class="badge">QUEM É A SOL</span>
+    <h2>Uma tutora sempre disponível</h2>
+    <p class="lead">
+      A <span class="highlight">Sol</span> é uma tutora virtual integrada ao ambiente de aprendizagem da faculdade.
+      Ela acompanha cada aluno de forma personalizada, lembra prazos, motiva, tira dúvidas e
+      garante que ninguém fique para trás na jornada acadêmica.
+    </p>
+    <div class="quote">
+      "Olá aluno(a), notei que você não acessa a plataforma há algum tempo. Vamos retomar?
+      — Sou a Sol, sua Tutora 🌞"
+    </div>
+    <div class="footer">SOL ACADEMY · 02 / 10</div>
+  </section>
+
+  <!-- SLIDE 3: COMO FUNCIONA -->
+  <section class="slide">
+    <span class="badge">COMO FUNCIONA</span>
+    <h2>Sempre ao alcance de um clique</h2>
+    <p class="lead">
+      Ao entrar na sala de aula virtual, o aluno encontra a Sol no menu principal,
+      identificada por um <span class="highlight">ícone de sol brilhante</span>.
+      Basta um clique para que ela apresente um painel completo de acompanhamento.
+    </p>
+    <div class="grid grid-3" style="margin-top: 40px;">
+      <div class="card">
+        <span class="icon">📅</span>
+        <h3>Lembretes</h3>
+        <p>Tarefas e eventos dos próximos 7 dias, organizados por data de entrega.</p>
+      </div>
+      <div class="card">
+        <span class="icon">💬</span>
+        <h3>Conversa</h3>
+        <p>Espaço para o aluno tirar dúvidas e dialogar com a tutora a qualquer hora.</p>
+      </div>
+      <div class="card">
+        <span class="icon">💡</span>
+        <h3>Motivação</h3>
+        <p>Mensagens de incentivo personalizadas para fortalecer o engajamento.</p>
+      </div>
+    </div>
+    <div class="footer">SOL ACADEMY · 03 / 10</div>
+  </section>
+
+  <!-- SLIDE 4: LEMBRETES -->
+  <section class="slide">
+    <span class="badge">FUNCIONALIDADE 1</span>
+    <h2>Lembretes da semana</h2>
+    <p class="lead">
+      A Sol identifica automaticamente o que o aluno precisa entregar e organiza tudo
+      em um painel claro e visual.
+    </p>
+    <ul class="clean" style="margin-top: 30px;">
+      <li>Mostra <b>tarefas pendentes</b> com data e horário de entrega</li>
+      <li>Apresenta <b>eventos importantes</b> da sala virtual</li>
+      <li><b>Esconde automaticamente</b> o que o aluno já concluiu</li>
+      <li>Cada atividade é um <b>atalho direto</b> para começar a fazer</li>
+      <li>Evita repetição: uma mesma atividade nunca aparece duas vezes</li>
+    </ul>
+    <div class="footer">SOL ACADEMY · 04 / 10</div>
+  </section>
+
+  <!-- SLIDE 5: CONVERSA -->
+  <section class="slide">
+    <span class="badge">FUNCIONALIDADE 2</span>
+    <h2>Conversa com a Sol</h2>
+    <p class="lead">
+      Dentro do próprio painel, o aluno encontra um espaço de diálogo onde pode
+      <span class="highlight">conversar com a tutora</span>, tirar dúvidas sobre o conteúdo
+      e receber orientações de estudo.
+    </p>
+    <div class="grid" style="margin-top: 30px;">
+      <div class="card">
+        <span class="icon">🕐</span>
+        <h3>Disponível 24 horas</h3>
+        <p>Apoio em qualquer momento, inclusive nos horários em que o aluno realmente estuda — à noite e nos fins de semana.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🎯</span>
+        <h3>Apoio individual</h3>
+        <p>Atendimento personalizado, no ritmo de cada aluno, sem filas e sem espera.</p>
+      </div>
+    </div>
+    <div class="footer">SOL ACADEMY · 05 / 10</div>
+  </section>
+
+  <!-- SLIDE 6: MOTIVACIONAL -->
+  <section class="slide">
+    <span class="badge">FUNCIONALIDADE 3</span>
+    <h2>Mensagens que inspiram</h2>
+    <p class="lead">
+      A cada acesso, a Sol entrega uma <span class="highlight">mensagem motivacional</span>
+      cuidadosamente escolhida em uma biblioteca de mais de <b>130 frases</b> sobre estudo,
+      persistência e crescimento pessoal.
+    </p>
+    <div class="quote">
+      💡 "O estudo de hoje é a liberdade de escolha de amanhã. 🌞"
+    </div>
+    <div class="quote" style="background: #eff6ff; border-color: #1e3a8a; color: #1e3a8a;">
+      💡 "Não foque na montanha inteira, foque no próximo passo. 🌞"
+    </div>
+    <div class="quote">
+      💡 "Você não está começando do zero, mas de onde parou ontem. 🌞"
+    </div>
+    <div class="footer">SOL ACADEMY · 06 / 10</div>
+  </section>
+
+  <!-- SLIDE 7: CUIDADO COM O ALUNO -->
+  <section class="slide">
+    <span class="badge">FUNCIONALIDADE 4</span>
+    <h2>Ninguém fica para trás</h2>
+    <p class="lead">
+      Se o aluno passa mais de <span class="highlight">três dias sem acessar</span> a plataforma,
+      a Sol percebe e oferece um acolhimento ao seu retorno.
+    </p>
+    <div class="quote" style="margin-top: 40px;">
+      ⏳ "Olá aluno(a), notei que você não acessa a plataforma há algum tempo.
+      Vamos retomar? — Sou a Sol, sua Tutora 🌞"
+    </div>
+    <p style="margin-top: 30px; font-size: 22px; color: #475569;">
+      Esse acolhimento humanizado <b>reduz a evasão</b> e mostra ao aluno que a faculdade
+      está atenta à sua jornada, do início ao fim.
+    </p>
+    <div class="footer">SOL ACADEMY · 07 / 10</div>
+  </section>
+
+  <!-- SLIDE 8: COMO ACONTECE -->
+  <section class="slide">
+    <span class="badge">A JORNADA</span>
+    <h2>A experiência do aluno</h2>
+    <div class="timeline">
+      <div class="step">
+        <div class="num-circle">1</div>
+        <h3>Entrada</h3>
+        <p>O aluno acessa a sala virtual e vê a Sol esperando por ele no menu.</p>
+      </div>
+      <div class="step">
+        <div class="num-circle">2</div>
+        <h3>Acolhimento</h3>
+        <p>Ao abrir, recebe uma mensagem motivacional personalizada.</p>
+      </div>
+      <div class="step">
+        <div class="num-circle">3</div>
+        <h3>Orientação</h3>
+        <p>Visualiza tarefas e eventos da semana já organizados.</p>
+      </div>
+      <div class="step">
+        <div class="num-circle">4</div>
+        <h3>Diálogo</h3>
+        <p>Conversa com a Sol para esclarecer dúvidas e seguir em frente.</p>
+      </div>
+    </div>
+    <div class="footer">SOL ACADEMY · 08 / 10</div>
+  </section>
+
+  <!-- SLIDE 9: BENEFÍCIOS -->
+  <section class="slide">
+    <span class="badge">RESULTADOS</span>
+    <h2>O que a Sol entrega</h2>
+    <div class="grid" style="margin-top: 20px;">
+      <div class="card">
+        <span class="icon">🎓</span>
+        <h3>Para o aluno</h3>
+        <p>Acompanhamento contínuo, mais organização, mais motivação e menos esquecimento de prazos.</p>
+      </div>
+      <div class="card">
+        <span class="icon">👨‍🏫</span>
+        <h3>Para o professor</h3>
+        <p>Alunos mais engajados e melhor preparados, com mais entregas dentro do prazo.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🏛️</span>
+        <h3>Para a instituição</h3>
+        <p>Redução da evasão, fortalecimento do vínculo aluno-faculdade e diferencial competitivo.</p>
+      </div>
+      <div class="card">
+        <span class="icon">💛</span>
+        <h3>Para a educação</h3>
+        <p>Ensino mais humano, mais acessível e mais próximo de cada estudante.</p>
+      </div>
+    </div>
+    <div class="footer">SOL ACADEMY · 09 / 10</div>
+  </section>
+
+  <!-- SLIDE 10: ENCERRAMENTO -->
+  <section class="slide final">
+    <div class="sun">🌞</div>
+    <h2>Sol Academy</h2>
+    <p>
+      Uma tutora que acolhe, organiza e inspira.<br>
+      Porque cada aluno merece um sol iluminando o seu caminho.
+    </p>
+    <p style="margin-top: 50px; font-size: 18px; opacity: 0.8; letter-spacing: 2px;">
+      OBRIGADO
+    </p>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button onclick="prev()">‹</button>
+  <span class="counter"><span id="cur">1</span> / <span id="total">10</span></span>
+  <button onclick="next()">›</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let idx = 0;
+  document.getElementById('total').textContent = slides.length;
+
+  function show(i) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[i].classList.add('active');
+    document.getElementById('cur').textContent = i + 1;
+  }
+  function next() { idx = (idx + 1) % slides.length; show(idx); }
+  function prev() { idx = (idx - 1 + slides.length) % slides.length; show(idx); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') next();
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') prev();
+    else if (e.key === 'Home') { idx = 0; show(idx); }
+    else if (e.key === 'End') { idx = slides.length - 1; show(idx); }
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sol Academy — Apresentação Institucional</title>
+<link rel="preload" as="image" href="https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Sun%20with%20face/3D/sun_with_face_3d.png">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -264,11 +265,24 @@
   }
   ul.clean li:last-child { border-bottom: none; }
   ul.clean li::before {
-    content: "🌞";
+    content: "";
     position: absolute;
     left: 0;
-    top: 14px;
-    font-size: 24px;
+    top: 12px;
+    width: 28px;
+    height: 28px;
+    background-image: url('https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Sun%20with%20face/3D/sun_with_face_3d.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  .emoji-sun {
+    height: 1em;
+    width: auto;
+    vertical-align: -0.15em;
+    display: inline-block;
+    user-select: none;
   }
 
   .timeline {
@@ -533,6 +547,32 @@
 </section>
 
 <script>
+  (function() {
+    const SUN_URL = 'https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Sun%20with%20face/3D/sun_with_face_3d.png';
+    function processNode(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.nodeValue;
+        if (!text.includes('🌞')) return;
+        const parts = text.split('🌞');
+        const fragment = document.createDocumentFragment();
+        parts.forEach((part, i) => {
+          if (part) fragment.appendChild(document.createTextNode(part));
+          if (i < parts.length - 1) {
+            const img = document.createElement('img');
+            img.src = SUN_URL;
+            img.className = 'emoji-sun';
+            img.alt = '🌞';
+            fragment.appendChild(img);
+          }
+        });
+        node.parentNode.replaceChild(fragment, node);
+      } else if (node.nodeType === Node.ELEMENT_NODE && !['SCRIPT', 'STYLE'].includes(node.tagName)) {
+        Array.from(node.childNodes).forEach(processNode);
+      }
+    }
+    processNode(document.body);
+  })();
+
   const progressBar = document.getElementById('progress');
   window.addEventListener('scroll', () => {
     const total = document.documentElement.scrollHeight - window.innerHeight;

@@ -17,9 +17,9 @@ const ROTEADOR_SOL = {
 
 // Cursos que exibem o botão "Fale com o Tutor". O valor é a URL da sala de
 // mensagens do tutor no Moodle (?id= é o user id do professor que recebe).
-// TODO: trocar o id=687 do 1955 pelo id real do tutor dessa turma.
+// 1955 e 1956 compartilham o mesmo tutor.
 const ROTEADOR_TUTOR = {
-    1955: "https://atp.esup.edu.br/message/index.php?id=687", // Turma só-tutor (id do tutor precisa ser confirmado)
+    1955: "https://atp.esup.edu.br/message/index.php?id=687", // Turma só-tutor
     1956: "https://atp.esup.edu.br/message/index.php?id=687", // Educação em Direitos Humanos - N
 };
 

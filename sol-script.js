@@ -13,12 +13,17 @@
     // 0. ROTEADOR CENTRAL DE CURSOS E TRAVA DE SEGURANÇA
     // =========================================================================
     var ROTEADOR_SOL = window.ROTEADOR_SOL || {};
+    var ROTEADOR_TUTOR = window.ROTEADOR_TUTOR || {};
     var COURSE_ID = (window.M && M.cfg && M.cfg.courseId) ? parseInt(M.cfg.courseId, 10) : 0;
 
-    // Se o curso atual não estiver no roteador (ou se o aluno estiver no Painel Inicial), o script morre.
-    if (!ROTEADOR_SOL[COURSE_ID]) {
-        console.log("🌞 Sol Academy: Oculta nesta página (Curso " + COURSE_ID + " não está no roteador).");
-        return; 
+    var TEM_SOL = !!ROTEADOR_SOL[COURSE_ID];
+    var TEM_TUTOR = !!ROTEADOR_TUTOR[COURSE_ID];
+
+    // Se o curso não está em nenhum dos dois roteadores (ou se o aluno está no
+    // Painel Inicial), o script morre.
+    if (!TEM_SOL && !TEM_TUTOR) {
+        console.log("🌞 Sol Academy: Oculta nesta página (Curso " + COURSE_ID + " não está em nenhum roteador).");
+        return;
     }
 
     // =========================================================================
@@ -30,7 +35,8 @@
 
     var customDataObj = { userId: USER_ID, userData: JSON.stringify({ name: USER_NAME, curso: COURSE_ID }) };
     var encodedCustomData = encodeURIComponent(JSON.stringify(customDataObj));
-    var CHAT_URL_ESPECIFICO = ROTEADOR_SOL[COURSE_ID] + "?custom=" + encodedCustomData;
+    var CHAT_URL_ESPECIFICO = TEM_SOL ? (ROTEADOR_SOL[COURSE_ID] + "?custom=" + encodedCustomData) : "";
+    var TUTOR_URL = TEM_TUTOR ? ROTEADOR_TUTOR[COURSE_ID] : "";
 
     console.log("🌞 Sol Academy: Modo Widget ativado para o curso " + COURSE_ID);
     
@@ -127,8 +133,8 @@
         }
     });
 
-    // Evita botões duplicados
-    if (document.getElementById('kai-sol-fab')) return;
+    // Evita botões duplicados (cobre tanto o caso Sol quanto Tutor)
+    if (document.getElementById('kai-sol-fab') || document.getElementById('kai-tutor-fab')) return;
 
     // =========================================================================
     // 2. ESTILOS VISUAIS (CSS)
@@ -139,27 +145,33 @@
     document.head.appendChild(cssLink);
 
     // =========================================================================
-    // 3. CONSTRUÇÃO DO WIDGET DA SOL ACADEMY
+    // 3. CONSTRUÇÃO DO WIDGET DA SOL ACADEMY (apenas cursos com Sol)
     // =========================================================================
-    var solOverlayContainer = document.createElement('div');
-    solOverlayContainer.innerHTML = window.SOL_TEMPLATES.solOverlay(CHAT_URL_ESPECIFICO);
-    document.body.appendChild(solOverlayContainer);
+    var sOverlay, sModal, sCloseBtn;
+    var openSol = function() {};
+    var closeSol = function() {};
 
-    var sOverlay = document.getElementById('kai-sol-overlay');
-    var sModal = document.getElementById('kai-sol-modal');
-    var sCloseBtn = document.getElementById('kai-sol-close');
+    if (TEM_SOL) {
+        var solOverlayContainer = document.createElement('div');
+        solOverlayContainer.innerHTML = window.SOL_TEMPLATES.solOverlay(CHAT_URL_ESPECIFICO);
+        document.body.appendChild(solOverlayContainer);
 
-    function openSol() { startInteraction('Sol'); sOverlay.style.display = 'flex'; setTimeout(() => { sOverlay.style.opacity = '1'; sModal.style.transform = 'translateY(0)'; }, 10); loadReminders(); }
-    function closeSol() { endInteraction(); sOverlay.style.opacity = '0'; sModal.style.transform = 'translateY(20px)'; setTimeout(() => { sOverlay.style.display = 'none'; }, 300); }
-    sCloseBtn.addEventListener('click', closeSol);
-    sOverlay.addEventListener('click', function(e){ if(e.target === this) closeSol(); });
+        sOverlay = document.getElementById('kai-sol-overlay');
+        sModal = document.getElementById('kai-sol-modal');
+        sCloseBtn = document.getElementById('kai-sol-close');
+
+        openSol = function() { startInteraction('Sol'); sOverlay.style.display = 'flex'; setTimeout(() => { sOverlay.style.opacity = '1'; sModal.style.transform = 'translateY(0)'; }, 10); loadReminders(); };
+        closeSol = function() { endInteraction(); sOverlay.style.opacity = '0'; sModal.style.transform = 'translateY(20px)'; setTimeout(() => { sOverlay.style.display = 'none'; }, 300); };
+        sCloseBtn.addEventListener('click', closeSol);
+        sOverlay.addEventListener('click', function(e){ if(e.target === this) closeSol(); });
+    }
 
     // =========================================================================
-    // 4. CONSTRUÇÃO DO WIDGET DA PROFESSORA (APENAS CURSO 1956)
+    // 4. CONSTRUÇÃO DO WIDGET DO TUTOR (cursos listados em ROTEADOR_TUTOR)
     // =========================================================================
-    if (COURSE_ID === 1956) {
+    if (TEM_TUTOR) {
         var tutorOverlayContainer = document.createElement('div');
-        tutorOverlayContainer.innerHTML = window.SOL_TEMPLATES.tutorOverlay();
+        tutorOverlayContainer.innerHTML = window.SOL_TEMPLATES.tutorOverlay(TUTOR_URL);
         document.body.appendChild(tutorOverlayContainer);
 
         var tOverlay = document.getElementById('kai-tutor-overlay');
@@ -218,8 +230,8 @@
 
         var moreDropdown = navUl.querySelector('li[data-region="morebutton"]');
 
-        // Botão da Sol (Para todos os cursos autorizados)
-        if (!document.getElementById('kai-sol-fab')) {
+        // Botão da Sol (apenas cursos listados em ROTEADOR_SOL)
+        if (TEM_SOL && !document.getElementById('kai-sol-fab')) {
             var solLi = document.createElement('li');
             solLi.className = 'nav-item';
             solLi.setAttribute('role', 'none');
@@ -228,8 +240,8 @@
             document.getElementById('kai-sol-fab').addEventListener('click', openSol);
         }
 
-        // Botão do Tutor (Apenas 1956)
-        if (COURSE_ID === 1956 && !document.getElementById('kai-tutor-fab')) {
+        // Botão do Tutor (apenas cursos listados em ROTEADOR_TUTOR)
+        if (TEM_TUTOR && !document.getElementById('kai-tutor-fab')) {
             var tutorLi = document.createElement('li');
             tutorLi.className = 'nav-item';
             tutorLi.setAttribute('role', 'none');

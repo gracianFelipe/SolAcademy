@@ -4,7 +4,8 @@
  */
 if (typeof window !== 'undefined') {
     window.SOL_TEMPLATES = window.SOL_TEMPLATES || {};
-    window.SOL_TEMPLATES.tutorOverlay = function() {
+    window.SOL_TEMPLATES.tutorOverlay = function(tutorUrl) {
+        var src = tutorUrl || "https://atp.esup.edu.br/message/index.php?id=687";
         return `
             <div id="kai-tutor-overlay" class="kai-overlay">
                 <div id="kai-tutor-modal" class="kai-modal" style="max-width: 800px; height: 85vh;">
@@ -13,7 +14,7 @@ if (typeof window !== 'undefined') {
                         <button id="kai-tutor-close" class="kai-close">&times;</button>
                     </div>
                     <div class="kai-body" style="padding: 0; position: relative;">
-                        <iframe id="kai-tutor-iframe" style="width: 100%; height: 100%; border: none;" src="https://atp.esup.edu.br/message/index.php?id=687"></iframe>
+                        <iframe id="kai-tutor-iframe" style="width: 100%; height: 100%; border: none;" src="${src}"></iframe>
                     </div>
                 </div>
             </div>

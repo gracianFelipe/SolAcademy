@@ -11,16 +11,25 @@
 
 const ROTEADOR_SOL = {
     1279: "https://platform.zaia.app/embed/chat/63480", // Curso de Teste
-    1783: "https://platform.zaia.app/embed/chat/63480", // Educação em Direitos Humanos - M 
+    1783: "https://platform.zaia.app/embed/chat/63480", // Educação em Direitos Humanos - M
     1956: "https://platform.zaia.app/embed/chat/63480", // Educação em Direitos Humanos - N
+};
+
+// Cursos que exibem o botão "Fale com o Tutor". O valor é a URL da sala de
+// mensagens do tutor no Moodle (?id= é o user id do professor que recebe).
+// TODO: trocar o id=687 do 1955 pelo id real do tutor dessa turma.
+const ROTEADOR_TUTOR = {
+    1955: "https://atp.esup.edu.br/message/index.php?id=687", // Turma só-tutor (id do tutor precisa ser confirmado)
+    1956: "https://atp.esup.edu.br/message/index.php?id=687", // Educação em Direitos Humanos - N
 };
 
 // Se estiver rodando no navegador (Sol Passiva / Moodle)
 if (typeof window !== 'undefined') {
     window.ROTEADOR_SOL = ROTEADOR_SOL;
+    window.ROTEADOR_TUTOR = ROTEADOR_TUTOR;
 }
 
 // Se estiver rodando no terminal pelo Node.js (Sol Ativa)
 if (typeof module !== 'undefined') {
-    module.exports = ROTEADOR_SOL;
+    module.exports = { ROTEADOR_SOL: ROTEADOR_SOL, ROTEADOR_TUTOR: ROTEADOR_TUTOR };
 }

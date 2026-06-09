@@ -9,3 +9,6 @@ src/config/env.js
 # Logs de Erro
 npm-debug.log*
 yarn-error.log*
+
+# Saidas do modulo de envio de emails (contem dados pessoais de alunos)
+src/envios/saidas/
